@@ -93,7 +93,9 @@ export default function YouTubePlayer({
           "❌ Élément player introuvable dans le DOM:",
           playerIdRef.current,
         );
-        console.error("⚠️ Le div n'existe pas encore. Vérifiez le rendu du composant.");
+        console.error(
+          "⚠️ Le div n'existe pas encore. Vérifiez le rendu du composant.",
+        );
         return;
       }
 
@@ -222,7 +224,7 @@ export default function YouTubePlayer({
             // Vérifier que le player est vraiment prêt
             if (typeof player.loadVideoById === "function") {
               console.log("🎬 Appel loadVideoById avec:", videoIdStr);
-              
+
               // Attendre un délai supplémentaire pour s'assurer que l'iframe est attaché au DOM
               setTimeout(() => {
                 try {
