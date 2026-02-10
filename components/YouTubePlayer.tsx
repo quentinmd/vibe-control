@@ -44,7 +44,7 @@ export default function YouTubePlayer({
   // Charger l'API YouTube IFrame
   useEffect(() => {
     console.log("🎬 Initialisation YouTube IFrame API...");
-    
+
     // Si l'API est déjà chargée
     if (window.YT && window.YT.Player) {
       console.log("✅ YouTube API déjà chargée");
@@ -72,19 +72,19 @@ export default function YouTubePlayer({
       console.log("⏳ En attente de l'API YouTube...");
       return;
     }
-    
+
     if (!playerRef.current) {
       console.log("⚠️ Ref du player non disponible");
       return;
     }
-    
+
     if (player) {
       console.log("ℹ️ Player déjà créé");
       return;
     }
 
     console.log("🎬 Création du lecteur YouTube...");
-    
+
     try {
       const ytPlayer = new window.YT.Player(playerIdRef.current, {
         height: "360",
@@ -103,15 +103,15 @@ export default function YouTubePlayer({
           },
           onStateChange: (event: any) => {
             const states: any = {
-              [-1]: 'Non démarré',
-              0: 'Terminé',
-              1: 'Lecture',
-              2: 'Pause',
-              3: 'Buffering',
-              5: 'Video cued'
+              [-1]: "Non démarré",
+              0: "Terminé",
+              1: "Lecture",
+              2: "Pause",
+              3: "Buffering",
+              5: "Video cued",
             };
             console.log(`🎵 État YouTube: ${states[event.data] || event.data}`);
-            
+
             // État: 0 = Terminé, 1 = Lecture, 2 = Pause
             if (event.data === window.YT.PlayerState.ENDED) {
               console.log("⏭️ Morceau terminé, passage au suivant");
@@ -142,10 +142,15 @@ export default function YouTubePlayer({
     if (hasLoadedTrack.current === currentTrack.id) return;
 
     const loadVideo = async () => {
-      console.log("🔍 Début chargement vidéo pour:", currentTrack.title, "-", currentTrack.artist);
+      console.log(
+        "🔍 Début chargement vidéo pour:",
+        currentTrack.title,
+        "-",
+        currentTrack.artist,
+      );
       setIsLoadingVideo(true);
       setSearchError(false);
-      
+
       try {
         // Construire la requête de recherche
         const searchQuery = `${currentTrack.artist} ${currentTrack.title} official audio`;
@@ -160,11 +165,11 @@ export default function YouTubePlayer({
           player.loadVideoById({
             videoId: videoId,
             startSeconds: 0,
-            suggestedQuality: 'default'
+            suggestedQuality: "default",
           });
           hasLoadedTrack.current = currentTrack.id;
           setSearchError(false);
-          
+
           // Tenter de lancer la lecture automatiquement
           setTimeout(() => {
             if (player && player.playVideo) {
@@ -178,17 +183,17 @@ export default function YouTubePlayer({
           const simpleQuery = `${currentTrack.artist} ${currentTrack.title}`;
           console.log("🔄 Tentative fallback:", simpleQuery);
           const fallbackVideoId = await searchYouTubeNoAPI(simpleQuery);
-          
+
           if (fallbackVideoId) {
             console.log("✅ Fallback réussi:", fallbackVideoId);
             player.loadVideoById({
               videoId: fallbackVideoId,
               startSeconds: 0,
-              suggestedQuality: 'default'
+              suggestedQuality: "default",
             });
             hasLoadedTrack.current = currentTrack.id;
             setSearchError(false);
-            
+
             setTimeout(() => {
               if (player && player.playVideo) {
                 player.playVideo();
@@ -310,9 +315,9 @@ export default function YouTubePlayer({
             </div>
           </div>
         )}
-        <div 
+        <div
           id={playerIdRef.current}
-          ref={playerRef} 
+          ref={playerRef}
           className="w-full aspect-video"
         />
       </div>

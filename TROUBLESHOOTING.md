@@ -9,14 +9,17 @@ Si le lecteur YouTube affiche un rectangle noir sans musique, suivez ces étapes
 ## ✅ Étape 1 : Ouvrir la Console Développeur
 
 **Sur Chrome/Edge/Brave** :
+
 - Appuyez sur `F12` ou `Cmd+Option+J` (Mac)
 - Onglet "Console"
 
 **Sur Safari** :
+
 - Safari > Préférences > Avancées > Cocher "Afficher le menu Développement"
 - Développement > Afficher la Console JavaScript
 
 **Sur Firefox** :
+
 - `F12` ou `Cmd+Option+K` (Mac)
 - Onglet "Console"
 
@@ -46,43 +49,51 @@ Une fois la console ouverte, **validez une suggestion** et observez les messages
 ### ❌ Erreurs Possibles
 
 #### Erreur A : API YouTube ne charge pas
+
 ```
 🎬 Initialisation YouTube IFrame API...
 (rien après)
 ```
 
-**Solution** : 
+**Solution** :
+
 - Vérifiez votre connexion Internet
 - Désactivez les bloqueurs de pub (uBlock, AdBlock)
 - Testez dans un onglet privé/incognito
 
 #### Erreur B : Player ne se crée pas
+
 ```
 ✅ YouTube IFrame API prête !
 ⚠️ Ref du player non disponible
 ```
 
 **Solution** :
+
 - Rafraîchissez la page (`Cmd+R` ou `F5`)
 - Videz le cache (`Cmd+Shift+R` ou `Ctrl+Shift+R`)
 
 #### Erreur C : Recherche échoue
+
 ```
 📡 Recherche YouTube: ...
 ❌ VideoId non trouvé pour: ...
 ```
 
 **Solution** :
+
 - L'API Invidious est temporairement down
 - Utilisez le **bouton manuel "Ouvrir sur YouTube"** qui devrait apparaître
 
 #### Erreur D : CORS / Fetch failed
+
 ```
 Failed to load resource: net::ERR_FAILED
 Access-Control-Allow-Origin
 ```
 
 **Solution** :
+
 - L'API route Next.js n'est pas accessible
 - Sur Vercel, vérifiez que le déploiement est complet
 - En local, vérifiez que `npm run dev` tourne bien
@@ -94,8 +105,9 @@ Access-Control-Allow-Origin
 ### Test 1 : API YouTube fonctionne-t-elle ?
 
 Ouvrez la console et tapez :
+
 ```javascript
-window.YT
+window.YT;
 ```
 
 **Résultat attendu** : Un objet JavaScript (pas `undefined`)  
@@ -104,7 +116,7 @@ window.YT
 ### Test 2 : Le player existe-t-il ?
 
 ```javascript
-document.getElementById('youtube-player-...')
+document.getElementById("youtube-player-...");
 ```
 
 **Résultat attendu** : Un élément `<div>`  
@@ -113,7 +125,9 @@ document.getElementById('youtube-player-...')
 ### Test 3 : L'API route fonctionne-t-elle ?
 
 ```javascript
-fetch('/api/youtube-search?q=test').then(r => r.json()).then(console.log)
+fetch("/api/youtube-search?q=test")
+  .then((r) => r.json())
+  .then(console.log);
 ```
 
 **Résultat attendu** : `{ videoId: "...", title: "...", ... }`  
@@ -126,20 +140,24 @@ fetch('/api/youtube-search?q=test').then(r => r.json()).then(console.log)
 Le lecteur affiche maintenant des **indicateurs d'état** :
 
 ### 🟡 "Lecteur YouTube en cours d'initialisation..."
+
 - **État** : L'API YouTube est chargée mais le player n'est pas encore créé
 - **Action** : Attendez 2-3 secondes
 - **Si bloqué** : Rafraîchissez la page
 
 ### 🟢 "✅ Lecteur prêt • Ouvrez la console pour voir les logs"
+
 - **État** : Tout fonctionne ! Le player est opérationnel
 - **Si pas de son** : Vérifiez que vous avez validé une suggestion
 
 ### 🔵 Spinner "Recherche de la vidéo..."
+
 - **État** : Recherche du videoId sur YouTube en cours
 - **Normal** : 2-5 secondes
 - **Si bloqué >10s** : L'API Invidious est probablement down
 
 ### 🔴 Message d'erreur rouge
+
 - **État** : Impossible de trouver la vidéo automatiquement
 - **Action** : Cliquez sur **"Ouvrir sur YouTube"** pour lancer manuellement
 
@@ -150,6 +168,7 @@ Le lecteur affiche maintenant des **indicateurs d'état** :
 ### Problème : La vidéo se charge mais pas de son
 
 **Causes possibles** :
+
 1. **Volume du système à 0** → Augmentez le volume
 2. **Onglet muté dans le navigateur** → Clic droit sur l'onglet > "Réactiver le son"
 3. **Bouton Mute activé** → Cliquez sur l'icône 🔊 dans les contrôles
@@ -160,6 +179,7 @@ Le lecteur affiche maintenant des **indicateurs d'état** :
 **C'est normal !** Les navigateurs bloquent l'autoplay par défaut.
 
 **Solution** :
+
 1. Cliquez n'importe où dans la page au premier chargement
 2. Cliquez sur le bouton ▶️ Play dans les contrôles
 3. La lecture automatique fonctionnera ensuite pour les morceaux suivants
@@ -169,19 +189,23 @@ Le lecteur affiche maintenant des **indicateurs d'état** :
 ## 🌐 Étape 6 : Spécificités par Navigateur
 
 ### Chrome / Edge / Brave ✅
+
 - **Le mieux supporté**
 - Autoplay fonctionne après une première interaction
 
 ### Safari ⚠️
+
 - **Restrictions strictes** sur l'autoplay
 - Peut nécessiter un clic manuel à chaque morceau
 - Testez en désactivant "Bloquer la lecture automatique" dans Préférences > Sites Web
 
 ### Firefox ✅
+
 - Fonctionne bien généralement
 - Vérifiez que "Bloquer la lecture automatique de l'audio" est désactivé dans `about:preferences#privacy`
 
 ### Mobile (iOS/Android) 📱
+
 - **Restrictions d'autoplay très strictes**
 - L'utilisateur DOIT interagir avec la page d'abord
 - Sur iOS Safari : Désactivez "Optimiser vidéos" dans Réglages > Safari
@@ -191,7 +215,9 @@ Le lecteur affiche maintenant des **indicateurs d'état** :
 ## 🚨 Solutions d'Urgence
 
 ### Solution 1 : Mode Dégradé Manuel
+
 Si rien ne fonctionne, utilisez le **bouton "Ouvrir sur YouTube"** :
+
 1. Validez une suggestion
 2. Si erreur → Cliquez sur "Ouvrir sur YouTube"
 3. La vidéo s'ouvre dans un nouvel onglet
@@ -200,6 +226,7 @@ Si rien ne fonctionne, utilisez le **bouton "Ouvrir sur YouTube"** :
 ### Solution 2 : Désactiver les Extensions
 
 Testez en **mode incognito/privé** :
+
 - Chrome : `Cmd+Shift+N` (Mac) ou `Ctrl+Shift+N` (Windows)
 - Safari : `Cmd+Shift+N`
 - Firefox : `Cmd+Shift+P`
@@ -209,6 +236,7 @@ Si ça fonctionne en incognito → Une extension bloque le lecteur (AdBlock, Pri
 ### Solution 3 : Autre Navigateur
 
 Testez avec un autre navigateur pour isoler le problème :
+
 - Chrome ✅ (recommandé)
 - Edge ✅
 - Firefox ✅
@@ -256,6 +284,7 @@ npm run dev
 ```
 
 Puis ouvrez `http://localhost:3000/host` et surveillez :
+
 - La console du navigateur
 - Le terminal où tourne `npm run dev`
 
@@ -266,15 +295,18 @@ Les logs côté serveur (API route) apparaîtront dans le terminal.
 ## 📞 Problèmes Connus
 
 ### 1. Instances Invidious Down ❌
+
 **Symptôme** : Toutes les recherches échouent  
 **Détection** : Message "❌ VideoId non trouvé" systématiquement  
 **Solution temporaire** : Utiliser le bouton manuel
 
 ### 2. Quota YouTube API Dépassé ⚠️
+
 **Symptôme** : Erreur 403 Forbidden  
 **Solution** : Patienter 24h ou ajouter une clé API YouTube officielle
 
 ### 3. Content Blockers 🚫
+
 **Symptôme** : Rectangle noir, aucun log YouTube  
 **Détection** : Erreur "Content blocker prevented frame"  
 **Solution** : Désactiver les bloqueurs pour ce site
