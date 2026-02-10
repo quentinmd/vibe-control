@@ -260,23 +260,38 @@ export default function YouTubePlayer({
           console.log("▶️ Chargement de la vidéo...");
 
           try {
-            // Vérifier que l'iframe est toujours attachée au DOM
-            const iframe = player.getIframe();
-            if (
-              !iframe ||
-              !iframe.isConnected ||
-              !document.body.contains(iframe)
-            ) {
-              console.error("❌ L'iframe YouTube n'est plus attachée au DOM");
-              setSearchError(true);
-              setIsLoadingVideo(false);
-              return;
+            // Vérifier que l'iframe existe (mais ne pas bloquer si pas attachée)
+            try {
+              const iframe = player.getIframe();
+              if (!iframe) {
+                console.error("❌ L'iframe YouTube n'existe pas");
+                setSearchError(true);
+                setIsLoadingVideo(false);
+                return;
+              }
+
+              const isAttached =
+                iframe.isConnected && document.body.contains(iframe);
+              console.log(
+                `🔍 État iframe: exists=${!!iframe}, isConnected=${iframe.isConnected}, inBody=${document.body.contains(iframe)}`,
+              );
+
+              if (!isAttached) {
+                console.warn(
+                  "⚠️ L'iframe n'est pas attachée, tentative de chargement quand même...",
+                );
+              }
+            } catch (iframeCheckError) {
+              console.warn(
+                "⚠️ Impossible de vérifier l'iframe:",
+                iframeCheckError,
+              );
+              // On continue quand même
             }
 
-            // Le player est prêt et l'iframe est attachée
+            // Essayer de charger la vidéo
             if (typeof player.loadVideoById === "function") {
               console.log("🎬 Appel loadVideoById avec:", videoIdStr);
-              console.log("✅ Player prêt, chargement de la vidéo...");
 
               player.loadVideoById({
                 videoId: videoIdStr,
@@ -285,31 +300,20 @@ export default function YouTubePlayer({
               });
               hasLoadedTrack.current = currentTrack.id;
               setSearchError(false);
-              console.log("✅ Vidéo chargée avec succès");
+              console.log("✅ loadVideoById appelé avec succès");
 
               // Attendre que la vidéo soit cued avant de lancer
               setTimeout(() => {
                 try {
-                  // Re-vérifier que l'iframe est toujours attachée
-                  const iframeCheck = player.getIframe();
-                  if (
-                    iframeCheck &&
-                    iframeCheck.isConnected &&
-                    document.body.contains(iframeCheck)
-                  ) {
-                    if (player && typeof player.playVideo === "function") {
-                      console.log("▶️ Lancement de la lecture...");
-                      player.playVideo();
-                    }
-                  } else {
-                    console.warn(
-                      "⚠️ L'iframe n'est plus attachée, impossible de lancer la lecture",
-                    );
+                  if (player && typeof player.playVideo === "function") {
+                    console.log("▶️ Lancement de la lecture...");
+                    player.playVideo();
+                    console.log("✅ playVideo appelé avec succès");
                   }
                 } catch (e) {
                   console.warn("⚠️ Erreur playVideo:", e);
                 }
-              }, 1500);
+              }, 1000);
             } else {
               console.error("❌ loadVideoById non disponible sur le player");
               setSearchError(true);
@@ -329,18 +333,27 @@ export default function YouTubePlayer({
             console.log("✅ Fallback réussi:", fallbackVideoId);
 
             try {
-              // Vérifier que l'iframe est toujours attachée au DOM
-              const iframe = player.getIframe();
-              if (
-                !iframe ||
-                !iframe.isConnected ||
-                !document.body.contains(iframe)
-              ) {
-                console.error(
-                  "❌ L'iframe YouTube n'est plus attachée au DOM (fallback)",
+              // Vérifier que l'iframe existe (mais ne pas bloquer)
+              try {
+                const iframe = player.getIframe();
+                if (!iframe) {
+                  console.error("❌ L'iframe YouTube n'existe pas (fallback)");
+                  setSearchError(true);
+                  return;
+                }
+
+                const isAttached =
+                  iframe.isConnected && document.body.contains(iframe);
+                if (!isAttached) {
+                  console.warn(
+                    "⚠️ L'iframe n'est pas attachée (fallback), tentative quand même...",
+                  );
+                }
+              } catch (iframeCheckError) {
+                console.warn(
+                  "⚠️ Impossible de vérifier l'iframe (fallback):",
+                  iframeCheckError,
                 );
-                setSearchError(true);
-                return;
               }
 
               if (typeof player.loadVideoById === "function") {
@@ -354,25 +367,14 @@ export default function YouTubePlayer({
 
                 setTimeout(() => {
                   try {
-                    // Re-vérifier que l'iframe est toujours attachée
-                    const iframeCheck = player.getIframe();
-                    if (
-                      iframeCheck &&
-                      iframeCheck.isConnected &&
-                      document.body.contains(iframeCheck)
-                    ) {
-                      if (player && typeof player.playVideo === "function") {
-                        player.playVideo();
-                      }
-                    } else {
-                      console.warn(
-                        "⚠️ L'iframe n'est plus attachée (fallback)",
-                      );
+                    if (player && typeof player.playVideo === "function") {
+                      player.playVideo();
+                      console.log("✅ playVideo appelé (fallback)");
                     }
                   } catch (e) {
                     console.warn("⚠️ Erreur playVideo (fallback):", e);
                   }
-                }, 1500);
+                }, 1000);
               } else {
                 setSearchError(true);
               }
@@ -406,13 +408,6 @@ export default function YouTubePlayer({
     if (!player) return;
 
     try {
-      // Vérifier que l'iframe est attachée
-      const iframe = player.getIframe();
-      if (!iframe || !iframe.isConnected || !document.body.contains(iframe)) {
-        console.warn("⚠️ L'iframe n'est pas attachée (togglePlay)");
-        return;
-      }
-
       if (isPlaying) {
         player.pauseVideo();
       } else {
@@ -431,13 +426,6 @@ export default function YouTubePlayer({
     if (!player) return;
 
     try {
-      // Vérifier que l'iframe est attachée
-      const iframe = player.getIframe();
-      if (!iframe || !iframe.isConnected || !document.body.contains(iframe)) {
-        console.warn("⚠️ L'iframe n'est pas attachée (toggleMute)");
-        return;
-      }
-
       if (isMuted) {
         player.unMute();
         setIsMuted(false);
