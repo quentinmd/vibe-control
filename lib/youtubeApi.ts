@@ -73,7 +73,9 @@ export async function searchYouTubeNoAPI(
 
     if (data.videoId) {
       console.log(`✅ VideoId trouvé: ${data.videoId}`);
-      console.log(`📏 Type: ${typeof data.videoId}, Longueur: ${data.videoId.length}`);
+      console.log(
+        `📏 Type: ${typeof data.videoId}, Longueur: ${data.videoId.length}`,
+      );
       return data.videoId;
     }
 

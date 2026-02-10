@@ -74,6 +74,11 @@ export default function YouTubePlayer({
       return;
     }
 
+    if (!currentTrack) {
+      console.log("⏳ En attente d'un track pour créer le player...");
+      return;
+    }
+
     if (player) {
       console.log("ℹ️ Player déjà créé");
       return;
@@ -88,10 +93,7 @@ export default function YouTubePlayer({
           "❌ Élément player introuvable dans le DOM:",
           playerIdRef.current,
         );
-        console.log("🔄 Nouvelle tentative dans 500ms...");
-        // Réessayer
-        setIsAPIReady(false);
-        setTimeout(() => setIsAPIReady(true), 500);
+        console.error("⚠️ Le div n'existe pas encore. Vérifiez le rendu du composant.");
         return;
       }
 
@@ -155,7 +157,7 @@ export default function YouTubePlayer({
     }, 100); // Délai de 100ms pour laisser le DOM se monter
 
     return () => clearTimeout(timer);
-  }, [isAPIReady, player]);
+  }, [isAPIReady, player, currentTrack]);
 
   // Charger une nouvelle vidéo quand le track change
   useEffect(() => {
@@ -220,26 +222,35 @@ export default function YouTubePlayer({
             // Vérifier que le player est vraiment prêt
             if (typeof player.loadVideoById === "function") {
               console.log("🎬 Appel loadVideoById avec:", videoIdStr);
-              player.loadVideoById({
-                videoId: videoIdStr,
-                startSeconds: 0,
-                suggestedQuality: "default",
-              });
-              hasLoadedTrack.current = currentTrack.id;
-              setSearchError(false);
-              console.log("✅ Vidéo chargée avec succès");
-
-              // Attendre que la vidéo soit cued avant de lancer
+              
+              // Attendre un délai supplémentaire pour s'assurer que l'iframe est attaché au DOM
               setTimeout(() => {
                 try {
-                  if (player && typeof player.playVideo === "function") {
-                    console.log("▶️ Lancement de la lecture...");
-                    player.playVideo();
-                  }
+                  player.loadVideoById({
+                    videoId: videoIdStr,
+                    startSeconds: 0,
+                    suggestedQuality: "default",
+                  });
+                  hasLoadedTrack.current = currentTrack.id;
+                  setSearchError(false);
+                  console.log("✅ Vidéo chargée avec succès");
+
+                  // Attendre que la vidéo soit cued avant de lancer
+                  setTimeout(() => {
+                    try {
+                      if (player && typeof player.playVideo === "function") {
+                        console.log("▶️ Lancement de la lecture...");
+                        player.playVideo();
+                      }
+                    } catch (e) {
+                      console.warn("⚠️ Erreur playVideo:", e);
+                    }
+                  }, 1000);
                 } catch (e) {
-                  console.warn("⚠️ Erreur playVideo:", e);
+                  console.error("❌ Erreur lors du chargement:", e);
+                  setSearchError(true);
                 }
-              }, 1500);
+              }, 500); // Délai pour garantir que l'iframe est attaché
             } else {
               console.error("❌ loadVideoById non disponible sur le player");
               setSearchError(true);
