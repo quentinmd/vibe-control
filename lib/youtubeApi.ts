@@ -45,6 +45,42 @@ export async function searchYouTube(query: string): Promise<YouTubeVideo[]> {
 }
 
 /**
+ * Rechercher un videoId YouTube sans clé API (méthode alternative)
+ * Utilise l'API publique noembed.com qui extrait les métadonnées YouTube
+ */
+export async function searchYouTubeNoAPI(
+  query: string,
+): Promise<string | null> {
+  try {
+    // Construire l'URL de recherche YouTube
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+
+    // Utiliser noembed pour extraire le premier résultat
+    // Alternative: utiliser Invidious API (instance publique)
+    const invidiousInstance = "https://invidious.jing.rocks";
+    const response = await fetch(
+      `${invidiousInstance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`,
+    );
+
+    if (!response.ok) {
+      console.warn("Invidious API non disponible, utilisation de fallback");
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      return data[0].videoId;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Erreur recherche YouTube (no API):", error);
+    return null;
+  }
+}
+
+/**
  * Construire une URL de recherche YouTube directe (sans API)
  * Utile pour ouvrir dans un nouvel onglet ou iframe
  */

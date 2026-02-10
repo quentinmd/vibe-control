@@ -7,9 +7,9 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-  ExternalLink,
 } from "lucide-react";
 import { Track } from "@/lib/supabase";
+import { searchYouTubeNoAPI } from "@/lib/youtubeApi";
 
 interface YouTubePlayerProps {
   currentTrack: Track | null;
@@ -33,7 +33,9 @@ export default function YouTubePlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isAPIReady, setIsAPIReady] = useState(false);
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
+  const hasLoadedTrack = useRef<string | null>(null);
 
   // Charger l'API YouTube IFrame
   useEffect(() => {
@@ -60,13 +62,14 @@ export default function YouTubePlayer({
     if (!isAPIReady || !playerRef.current || player) return;
 
     const ytPlayer = new window.YT.Player(playerRef.current, {
-      height: "100%",
+      height: "360",
       width: "100%",
       playerVars: {
-        autoplay: 0,
+        autoplay: 1,
         controls: 1,
         modestbranding: 1,
         rel: 0,
+        fs: 0,
       },
       events: {
         onReady: (event: any) => {
@@ -91,23 +94,40 @@ export default function YouTubePlayer({
   useEffect(() => {
     if (!player || !currentTrack) return;
 
-    // Construire la requête de recherche
-    const searchQuery = `${currentTrack.artist} ${currentTrack.title} official audio`;
+    // Éviter de recharger le même track
+    if (hasLoadedTrack.current === currentTrack.id) return;
 
-    // Charger la vidéo (YouTube cherchera automatiquement)
-    // Note: Pour de meilleurs résultats, utilisez l'API de recherche YouTube
-    // et stockez le videoId dans la table tracks
+    const loadVideo = async () => {
+      setIsLoadingVideo(true);
+      try {
+        // Construire la requête de recherche
+        const searchQuery = `${currentTrack.artist} ${currentTrack.title} official audio`;
 
-    // Temporaire: on utilise une vidéo par défaut
-    // En production, faites une recherche YouTube API et stockez le videoId
-    player.loadVideoByUrl(
-      `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`,
-    );
+        // Rechercher le videoId
+        const videoId = await searchYouTubeNoAPI(searchQuery);
 
-    // Alternative si vous avez le videoId:
-    // if (currentTrack.spotify_id) {
-    //   player.loadVideoById(currentTrack.spotify_id) // Utilisez spotify_id comme videoId
-    // }
+        if (videoId) {
+          console.log("🎵 Chargement vidéo YouTube:", videoId);
+          player.loadVideoById(videoId);
+          hasLoadedTrack.current = currentTrack.id;
+        } else {
+          console.error("❌ VideoId non trouvé pour:", searchQuery);
+          // Fallback: essayer avec une recherche simplifiée
+          const simpleQuery = `${currentTrack.artist} ${currentTrack.title}`;
+          const fallbackVideoId = await searchYouTubeNoAPI(simpleQuery);
+          if (fallbackVideoId) {
+            player.loadVideoById(fallbackVideoId);
+            hasLoadedTrack.current = currentTrack.id;
+          }
+        }
+      } catch (error) {
+        console.error("Erreur chargement vidéo:", error);
+      } finally {
+        setIsLoadingVideo(false);
+      }
+    };
+
+    loadVideo();
   }, [currentTrack, player]);
 
   const handleTrackEnd = () => {
@@ -193,37 +213,38 @@ export default function YouTubePlayer({
           )}
         </div>
 
-        <button
-          onClick={openInYouTube}
-          className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
-          title="Ouvrir sur YouTube"
-        >
-          <ExternalLink className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="px-3 py-1 rounded-full bg-neon-violet/20 text-neon-violet text-xs font-semibold">
+            En cours
+          </div>
+        </div>
       </div>
 
-      {/* Lecteur YouTube (caché visuellement, audio uniquement) */}
-      <div className="hidden">
-        <div ref={playerRef} />
+      {/* Lecteur YouTube intégré */}
+      <div className="relative bg-black rounded-lg overflow-hidden">
+        {isLoadingVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-neon-violet border-t-transparent"></div>
+          </div>
+        )}
+        <div ref={playerRef} className="w-full aspect-video" />
       </div>
 
-      {/* Message instructif */}
-      <div className="bg-dark-bg rounded-lg p-4 border border-neon-cyan/20">
-        <p className="text-sm text-gray-400 text-center">
-          🎵 Cliquez sur le bouton YouTube ci-dessus pour lancer la musique dans
-          un nouvel onglet
-        </p>
-        <p className="text-xs text-gray-500 text-center mt-2">
-          Le lecteur automatique YouTube arrivera dans une prochaine version
-        </p>
-      </div>
+      {/* Message d'état */}
+      {!isAPIReady && (
+        <div className="bg-dark-bg rounded-lg p-4 border border-neon-cyan/20">
+          <p className="text-sm text-gray-400 text-center">
+            ⏳ Chargement du lecteur YouTube...
+          </p>
+        </div>
+      )}
 
-      {/* Contrôles (désactivés pour le MVP - optionnel) */}
-      <div className="flex items-center justify-center gap-4 opacity-50 pointer-events-none">
+      {/* Contrôles du lecteur */}
+      <div className="flex items-center justify-center gap-4">
         <button
           onClick={toggleMute}
           className="p-3 rounded-full bg-dark-bg hover:bg-neon-violet/20 transition-colors"
-          disabled
+          disabled={!player}
         >
           {isMuted ? (
             <VolumeX className="w-5 h-5" />
@@ -234,8 +255,8 @@ export default function YouTubePlayer({
 
         <button
           onClick={togglePlay}
-          className="p-4 rounded-full bg-neon-violet neon-glow-violet hover:bg-opacity-90 transition-all transform hover:scale-105"
-          disabled
+          className="p-4 rounded-full bg-neon-violet neon-glow-violet hover:bg-opacity-90 transition-all transform hover:scale-105 disabled:opacity-50"
+          disabled={!player}
         >
           {isPlaying ? (
             <Pause className="w-6 h-6" />
@@ -247,7 +268,7 @@ export default function YouTubePlayer({
         <button
           onClick={skipTrack}
           className="p-3 rounded-full bg-dark-bg hover:bg-neon-violet/20 transition-colors"
-          disabled
+          disabled={!player || playlist.length <= 1}
         >
           <SkipForward className="w-5 h-5" />
         </button>
