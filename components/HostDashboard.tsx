@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase, Track, Session } from "@/lib/supabase";
 import { Music, Check, X, Play, Clock, PartyPopper } from "lucide-react";
+import YouTubePlayer from "./YouTubePlayer";
 
 interface HostDashboardProps {
   session: Session;
@@ -10,7 +11,17 @@ interface HostDashboardProps {
 
 export default function HostDashboard({ session }: HostDashboardProps) {
   const [pendingTracks, setPendingTracks] = useState<Track[]>([]);
-  const [approvedTracks, setApprovedTracks] = useState<Track[]>([]);
+  const [approvedTracks, setApprovedTracks] = useSt
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+
+  // Mettre à jour le morceau en cours quand la playlist change
+  useEffect(() => {
+    if (approvedTracks.length > 0 && !currentTrack) {
+      setCurrentTrack(approvedTracks[0]);
+    } else if (approvedTracks.length === 0) {
+      setCurrentTrack(null);
+    }
+  }, [approvedTracks]);ate<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Charger les tracks initiales
@@ -120,10 +131,36 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   const handleReject = async (trackId: string) => {
     try {
       const { error } = await supabase
+  // Gérer la fin d'un morceau
+  const handleTrackEnd = async (trackId: string) => {
+    try {
+      // Marquer comme "played"
+      await supabase
+        .from('tracks')
+        .update({ status: 'played', played_at: new Date().toISOString() })
+        .eq('id', trackId);
+
+      // Passer au suivant
+      const nextTrack = approvedTracks.find(t => t.id !== trackId);
+      setCurrentTrack(nextTrack || null);
+    } catch (error) {
+      console.error('Erreur fin track:', error);
+    }
+  };
+
         .from("tracks")
         .update({ status: "rejected" })
-        .eq("id", trackId);
+        .eq("id", trspace-y-6">
+      {/* LECTEUR YOUTUBE */}
+      <YouTubePlayer
+        currentTrack={currentTrack}
+        playlist={approvedTracks}
+        onTrackEnd={handleTrackEnd}
+      />
 
+      {/* GRILLE 2 COLONNES */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  
       if (error) throw error;
     } catch (error) {
       console.error("Erreur rejet:", error);
@@ -274,6 +311,8 @@ export default function HostDashboard({ session }: HostDashboardProps) {
           )}
         </div>
       </div>
+    </div>
+    {/* Fin de la grille 2 colonnes */}
     </div>
   );
 }
