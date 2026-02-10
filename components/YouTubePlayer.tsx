@@ -74,75 +74,88 @@ export default function YouTubePlayer({
       return;
     }
 
-    if (!playerRef.current) {
-      console.log("⚠️ Ref du player non disponible");
-      return;
-    }
-
     if (player) {
       console.log("ℹ️ Player déjà créé");
       return;
     }
 
-    console.log("🎬 Création du lecteur YouTube...");
-    console.log("🎯 Target element ID:", playerIdRef.current);
-    console.log(
-      "🎯 Element exists:",
-      document.getElementById(playerIdRef.current),
-    );
+    // Attendre que le DOM soit prêt avec un petit délai
+    const timer = setTimeout(() => {
+      const targetElement = document.getElementById(playerIdRef.current);
 
-    try {
-      const ytPlayer = new window.YT.Player(playerIdRef.current, {
-        height: "360",
-        width: "100%",
-        videoId: undefined, // Pas de vidéo au démarrage
-        playerVars: {
-          autoplay: 0,
-          controls: 1,
-          modestbranding: 1,
-          rel: 0,
-          fs: 0,
-          enablejsapi: 1,
-        },
-        events: {
-          onReady: (event: any) => {
-            console.log("✅ YouTube Player prêt et opérationnel !");
-            setPlayer(event.target);
-            setIsPlayerReady(true);
-            console.log("🔓 Player déverrouillé, prêt à charger des vidéos");
-          },
-          onStateChange: (event: any) => {
-            const states: any = {
-              [-1]: "Non démarré",
-              0: "Terminé",
-              1: "Lecture",
-              2: "Pause",
-              3: "Buffering",
-              5: "Video cued",
-            };
-            console.log(`🎵 État YouTube: ${states[event.data] || event.data}`);
+      if (!targetElement) {
+        console.error(
+          "❌ Élément player introuvable dans le DOM:",
+          playerIdRef.current,
+        );
+        console.log("🔄 Nouvelle tentative dans 500ms...");
+        // Réessayer
+        setIsAPIReady(false);
+        setTimeout(() => setIsAPIReady(true), 500);
+        return;
+      }
 
-            // État: 0 = Terminé, 1 = Lecture, 2 = Pause
-            if (event.data === window.YT.PlayerState.ENDED) {
-              console.log("⏭️ Morceau terminé, passage au suivant");
-              handleTrackEnd();
-            } else if (event.data === window.YT.PlayerState.PLAYING) {
-              setIsPlaying(true);
-            } else if (event.data === window.YT.PlayerState.PAUSED) {
-              setIsPlaying(false);
-            }
+      console.log("🎬 Création du lecteur YouTube...");
+      console.log("🎯 Target element ID:", playerIdRef.current);
+      console.log("✅ Element trouvé dans le DOM");
+
+      try {
+        const ytPlayer = new window.YT.Player(playerIdRef.current, {
+          height: "360",
+          width: "100%",
+          videoId: undefined, // Pas de vidéo au démarrage
+          playerVars: {
+            autoplay: 0,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            fs: 0,
+            enablejsapi: 1,
           },
-          onError: (event: any) => {
-            console.error("❌ Erreur YouTube Player:", event.data);
-            setSearchError(true);
+          events: {
+            onReady: (event: any) => {
+              console.log("✅ YouTube Player prêt et opérationnel !");
+              setPlayer(event.target);
+              setIsPlayerReady(true);
+              console.log("🔓 Player déverrouillé, prêt à charger des vidéos");
+            },
+            onStateChange: (event: any) => {
+              const states: any = {
+                [-1]: "Non démarré",
+                0: "Terminé",
+                1: "Lecture",
+                2: "Pause",
+                3: "Buffering",
+                5: "Video cued",
+              };
+              console.log(
+                `🎵 État YouTube: ${states[event.data] || event.data}`,
+              );
+
+              // État: 0 = Terminé, 1 = Lecture, 2 = Pause
+              if (event.data === window.YT.PlayerState.ENDED) {
+                console.log("⏭️ Morceau terminé, passage au suivant");
+                handleTrackEnd();
+              } else if (event.data === window.YT.PlayerState.PLAYING) {
+                setIsPlaying(true);
+              } else if (event.data === window.YT.PlayerState.PAUSED) {
+                setIsPlaying(false);
+              }
+            },
+            onError: (event: any) => {
+              console.error("❌ Erreur YouTube Player:", event.data);
+              setSearchError(true);
+            },
           },
-        },
-      });
-    } catch (error) {
-      console.error("❌ Erreur création player:", error);
-      setSearchError(true);
-    }
-  }, [isAPIReady]);
+        });
+      } catch (error) {
+        console.error("❌ Erreur création player:", error);
+        setSearchError(true);
+      }
+    }, 100); // Délai de 100ms pour laisser le DOM se monter
+
+    return () => clearTimeout(timer);
+  }, [isAPIReady, player]);
 
   // Charger une nouvelle vidéo quand le track change
   useEffect(() => {
