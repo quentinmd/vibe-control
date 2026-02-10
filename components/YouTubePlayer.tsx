@@ -39,11 +39,15 @@ export default function YouTubePlayer({
   const [searchError, setSearchError] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
   const hasLoadedTrack = useRef<string | null>(null);
+  const playerIdRef = useRef(`youtube-player-${Date.now()}`);
 
   // Charger l'API YouTube IFrame
   useEffect(() => {
+    console.log("🎬 Initialisation YouTube IFrame API...");
+    
     // Si l'API est déjà chargée
     if (window.YT && window.YT.Player) {
+      console.log("✅ YouTube API déjà chargée");
       setIsAPIReady(true);
       return;
     }
@@ -53,44 +57,81 @@ export default function YouTubePlayer({
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName("script")[0];
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    console.log("📥 Script YouTube IFrame API ajouté au DOM");
 
     // Callback quand l'API est prête
     window.onYouTubeIframeAPIReady = () => {
+      console.log("✅ YouTube IFrame API prête !");
       setIsAPIReady(true);
     };
   }, []);
 
   // Créer le lecteur YouTube
   useEffect(() => {
-    if (!isAPIReady || !playerRef.current || player) return;
+    if (!isAPIReady) {
+      console.log("⏳ En attente de l'API YouTube...");
+      return;
+    }
+    
+    if (!playerRef.current) {
+      console.log("⚠️ Ref du player non disponible");
+      return;
+    }
+    
+    if (player) {
+      console.log("ℹ️ Player déjà créé");
+      return;
+    }
 
-    const ytPlayer = new window.YT.Player(playerRef.current, {
-      height: "360",
-      width: "100%",
-      playerVars: {
-        autoplay: 1,
-        controls: 1,
-        modestbranding: 1,
-        rel: 0,
-        fs: 0,
-      },
-      events: {
-        onReady: (event: any) => {
-          console.log("YouTube Player prêt");
-          setPlayer(event.target);
+    console.log("🎬 Création du lecteur YouTube...");
+    
+    try {
+      const ytPlayer = new window.YT.Player(playerIdRef.current, {
+        height: "360",
+        width: "100%",
+        playerVars: {
+          autoplay: 0, // Désactivé pour éviter les blocages navigateur
+          controls: 1,
+          modestbranding: 1,
+          rel: 0,
+          fs: 0,
         },
-        onStateChange: (event: any) => {
-          // État: 0 = Terminé, 1 = Lecture, 2 = Pause
-          if (event.data === window.YT.PlayerState.ENDED) {
-            handleTrackEnd();
-          } else if (event.data === window.YT.PlayerState.PLAYING) {
-            setIsPlaying(true);
-          } else if (event.data === window.YT.PlayerState.PAUSED) {
-            setIsPlaying(false);
-          }
+        events: {
+          onReady: (event: any) => {
+            console.log("✅ YouTube Player prêt et opérationnel !");
+            setPlayer(event.target);
+          },
+          onStateChange: (event: any) => {
+            const states: any = {
+              [-1]: 'Non démarré',
+              0: 'Terminé',
+              1: 'Lecture',
+              2: 'Pause',
+              3: 'Buffering',
+              5: 'Video cued'
+            };
+            console.log(`🎵 État YouTube: ${states[event.data] || event.data}`);
+            
+            // État: 0 = Terminé, 1 = Lecture, 2 = Pause
+            if (event.data === window.YT.PlayerState.ENDED) {
+              console.log("⏭️ Morceau terminé, passage au suivant");
+              handleTrackEnd();
+            } else if (event.data === window.YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+            } else if (event.data === window.YT.PlayerState.PAUSED) {
+              setIsPlaying(false);
+            }
+          },
+          onError: (event: any) => {
+            console.error("❌ Erreur YouTube Player:", event.data);
+            setSearchError(true);
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.error("❌ Erreur création player:", error);
+      setSearchError(true);
+    }
   }, [isAPIReady]);
 
   // Charger une nouvelle vidéo quand le track change
@@ -101,37 +142,65 @@ export default function YouTubePlayer({
     if (hasLoadedTrack.current === currentTrack.id) return;
 
     const loadVideo = async () => {
+      console.log("🔍 Début chargement vidéo pour:", currentTrack.title, "-", currentTrack.artist);
       setIsLoadingVideo(true);
       setSearchError(false);
+      
       try {
         // Construire la requête de recherche
         const searchQuery = `${currentTrack.artist} ${currentTrack.title} official audio`;
+        console.log("📡 Recherche YouTube:", searchQuery);
 
         // Rechercher le videoId
         const videoId = await searchYouTubeNoAPI(searchQuery);
 
         if (videoId) {
-          console.log("🎵 Chargement vidéo YouTube:", videoId);
-          player.loadVideoById(videoId);
+          console.log("✅ VideoId trouvé:", videoId);
+          console.log("▶️ Chargement et lecture...");
+          player.loadVideoById({
+            videoId: videoId,
+            startSeconds: 0,
+            suggestedQuality: 'default'
+          });
           hasLoadedTrack.current = currentTrack.id;
           setSearchError(false);
+          
+          // Tenter de lancer la lecture automatiquement
+          setTimeout(() => {
+            if (player && player.playVideo) {
+              console.log("▶️ Tentative de lecture automatique...");
+              player.playVideo();
+            }
+          }, 1000);
         } else {
           console.warn("⚠️ VideoId non trouvé pour:", searchQuery);
           // Fallback: essayer avec une recherche simplifiée
           const simpleQuery = `${currentTrack.artist} ${currentTrack.title}`;
+          console.log("🔄 Tentative fallback:", simpleQuery);
           const fallbackVideoId = await searchYouTubeNoAPI(simpleQuery);
+          
           if (fallbackVideoId) {
             console.log("✅ Fallback réussi:", fallbackVideoId);
-            player.loadVideoById(fallbackVideoId);
+            player.loadVideoById({
+              videoId: fallbackVideoId,
+              startSeconds: 0,
+              suggestedQuality: 'default'
+            });
             hasLoadedTrack.current = currentTrack.id;
             setSearchError(false);
+            
+            setTimeout(() => {
+              if (player && player.playVideo) {
+                player.playVideo();
+              }
+            }, 1000);
           } else {
             console.error("❌ Aucun videoId trouvé après fallback");
             setSearchError(true);
           }
         }
       } catch (error) {
-        console.error("Erreur chargement vidéo:", error);
+        console.error("❌ Erreur chargement vidéo:", error);
         setSearchError(true);
       } finally {
         setIsLoadingVideo(false);
@@ -235,10 +304,17 @@ export default function YouTubePlayer({
       <div className="relative bg-black rounded-lg overflow-hidden">
         {isLoadingVideo && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-neon-violet border-t-transparent"></div>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-neon-violet border-t-transparent mx-auto mb-3"></div>
+              <p className="text-sm text-gray-400">Recherche de la vidéo...</p>
+            </div>
           </div>
         )}
-        <div ref={playerRef} className="w-full aspect-video" />
+        <div 
+          id={playerIdRef.current}
+          ref={playerRef} 
+          className="w-full aspect-video"
+        />
       </div>
 
       {/* Message d'état */}
@@ -246,6 +322,23 @@ export default function YouTubePlayer({
         <div className="bg-dark-bg rounded-lg p-4 border border-neon-cyan/20">
           <p className="text-sm text-gray-400 text-center">
             ⏳ Chargement du lecteur YouTube...
+          </p>
+        </div>
+      )}
+
+      {/* Info de debug */}
+      {isAPIReady && !player && (
+        <div className="bg-yellow-900/20 rounded-lg p-4 border border-yellow-500/30">
+          <p className="text-sm text-yellow-300 text-center">
+            ⚙️ Lecteur YouTube en cours d'initialisation...
+          </p>
+        </div>
+      )}
+
+      {isAPIReady && player && !isLoadingVideo && !searchError && (
+        <div className="bg-green-900/20 rounded-lg p-3 border border-green-500/30">
+          <p className="text-xs text-green-300 text-center">
+            ✅ Lecteur prêt • Ouvrez la console pour voir les logs
           </p>
         </div>
       )}
