@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  @apply bg-dark-bg text-white antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neon-violet rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-neon-cyan;
+}
+
+/* Neon glow utility classes */
+.neon-glow-violet {
+  box-shadow:
+    0 0 10px rgba(157, 78, 221, 0.5),
+    0 0 20px rgba(157, 78, 221, 0.3);
+}
+
+.neon-glow-cyan {
+  box-shadow:
+    0 0 10px rgba(0, 217, 255, 0.5),
+    0 0 20px rgba(0, 217, 255, 0.3);
+}
+
+/* Button animations */
+.btn-neon {
+  @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105;
+}
+
+.btn-neon-primary {
+  @apply bg-neon-violet text-white neon-glow-violet hover:bg-opacity-90;
+}
+
+.btn-neon-secondary {
+  @apply bg-neon-cyan text-dark-bg neon-glow-cyan hover:bg-opacity-90;
+}
