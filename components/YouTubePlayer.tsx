@@ -120,12 +120,21 @@ export default function YouTubePlayer({
             onReady: (event: any) => {
               console.log("✅ YouTube Player prêt et opérationnel !");
               setPlayer(event.target);
-              // Attendre 1 seconde avant de dire que le player est prêt
-              // pour garantir que l'iframe est bien attachée au DOM
+              // Attendre 2 secondes avant de dire que le player est prêt
+              // pour garantir que l'iframe YouTube est bien attachée au DOM
               setTimeout(() => {
+                // Vérifier que l'iframe existe vraiment
+                const iframe = document.querySelector('iframe[src*="youtube.com/embed"]');
+                if (iframe) {
+                  console.log("✅ iFrame YouTube confirmée dans le DOM");
+                } else {
+                  console.warn("⚠️ iFrame YouTube non trouvée dans le DOM");
+                }
                 setIsPlayerReady(true);
-                console.log("🔓 Player déverrouillé, prêt à charger des vidéos");
-              }, 1000);
+                console.log(
+                  "🔓 Player déverrouillé, prêt à charger des vidéos",
+                );
+              }, 2000);
             },
             onStateChange: (event: any) => {
               const states: any = {
@@ -225,11 +234,20 @@ export default function YouTubePlayer({
           console.log("▶️ Chargement de la vidéo...");
 
           try {
-            // Vérifier que le player est vraiment prêt
+            // Vérifier que le player est vraiment prêt et l'iframe existe
+            const iframe = document.querySelector('iframe[src*="youtube.com/embed"]');
+            if (!iframe) {
+              console.error("❌ iFrame YouTube non trouvée, impossible de charger la vidéo");
+              setSearchError(true);
+              setIsLoadingVideo(false);
+              return;
+            }
+            
             if (typeof player.loadVideoById === "function") {
               console.log("🎬 Appel loadVideoById avec:", videoIdStr);
+              console.log("✅ iFrame présente, chargement de la vidéo...");
 
-              // Le player est prêt (on a déjà attendu 1s dans onReady)
+              // Le player est prêt (on a déjà attendu 2s dans onReady)
               player.loadVideoById({
                 videoId: videoIdStr,
                 startSeconds: 0,
@@ -249,7 +267,7 @@ export default function YouTubePlayer({
                 } catch (e) {
                   console.warn("⚠️ Erreur playVideo:", e);
                 }
-              }, 1500);
+              }, 2000);
             } else {
               console.error("❌ loadVideoById non disponible sur le player");
               setSearchError(true);
