@@ -190,15 +190,31 @@ export default function YouTubePlayer({
         // Rechercher le videoId
         const videoId = await searchYouTubeNoAPI(searchQuery);
 
+        console.log("🔍 VideoId reçu:", videoId, "(type:", typeof videoId, ")");
+
         if (videoId) {
-          console.log("✅ VideoId trouvé:", videoId);
+          // Validation du videoId (doit être une string de 11 caractères)
+          const videoIdStr = String(videoId).trim();
+          const isValidFormat = /^[a-zA-Z0-9_-]{11}$/.test(videoIdStr);
+          
+          console.log("✅ VideoId trouvé:", videoIdStr);
+          console.log("📏 Longueur:", videoIdStr.length, "/ Format valide:", isValidFormat);
+          
+          if (!isValidFormat) {
+            console.error("❌ Format videoId invalide:", videoIdStr);
+            setSearchError(true);
+            setIsLoadingVideo(false);
+            return;
+          }
+          
           console.log("▶️ Chargement de la vidéo...");
 
           try {
             // Vérifier que le player est vraiment prêt
             if (typeof player.loadVideoById === "function") {
+              console.log("🎬 Appel loadVideoById avec:", videoIdStr);
               player.loadVideoById({
-                videoId: videoId,
+                videoId: videoIdStr,
                 startSeconds: 0,
                 suggestedQuality: "default",
               });

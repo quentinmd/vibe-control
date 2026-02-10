@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { Search, Music, Loader2 } from "lucide-react";
-import { searchMusic, TrackResult } from "@/lib/musicApi";
+import { searchYouTubeNoAPI } from "@/lib/youtubeApi";
+
+interface YouTubeSearchResult {
+  videoId: string;
+  title: string;
+  artist: string;
+  thumbnail: string;
+}
 
 interface Track {
   id: string;
@@ -19,7 +26,7 @@ interface MusicSearchProps {
 
 export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<TrackResult[]>([]);
+  const [searchResults, setSearchResults] = useState<YouTubeSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,16 +37,38 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
     setError(null);
 
     try {
-      // Appel à l'API iTunes (gratuit, pas de clé nécessaire)
-      const results = await searchMusic(searchQuery);
-      setSearchResults(results);
+      // Recherche directement sur YouTube via notre API
+      console.log("🔍 Recherche YouTube pour:", searchQuery);
+      
+      const response = await fetch(
+        `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
 
-      if (results.length === 0) {
-        setError("Aucun résultat trouvé");
+      if (!response.ok) {
+        throw new Error("Erreur recherche YouTube");
+      }
+
+      const data = await response.json();
+      
+      if (data.videoId) {
+        // Créer un résultat unique depuis la réponse YouTube
+        const result: YouTubeSearchResult = {
+          videoId: data.videoId,
+          title: data.title || searchQuery,
+          artist: data.author || "Artiste inconnu",
+          thumbnail: `https://img.youtube.com/vi/${data.videoId}/mqdefault.jpg`,
+        };
+        setSearchResults([result]);
+        console.log("✅ Résultat trouvé:", result);
+      } else {
+        setSearchResults([]);
+        setError("Aucun résultat trouvé sur YouTube");
       }
     } catch (err) {
       console.error("Erreur recherche:", err);
       setError("Erreur lors de la recherche. Réessayez.");
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -99,9 +128,9 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
                 className="bg-dark-bg rounded-lg p-4 border border-neon-violet/20 hover:border-neon-violet/50 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  {track.cover_url ? (
+                  {track.thumbnail ? (
                     <img
-                      src={track.cover_url}
+                      src={track.thumbnail}
                       alt={track.title}
                       className="w-16 h-16 rounded object-cover"
                     />
@@ -118,15 +147,14 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
                     <p className="text-sm text-gray-400 truncate">
                       {track.artist}
                     </p>
-                    {track.album && (
-                      <p className="text-xs text-gray-500 truncate">
-                        {track.album}
-                      </p>
-                    )}
                   </div>
 
                   <button
-                    onClick={() => onSelectTrack(track)}
+                    onClick={() => onSelectTrack({
+                      title: track.title,
+                      artist: track.artist,
+                      cover_url: track.thumbnail,
+                    })}
                     className="btn-neon btn-neon-secondary px-4 py-2 text-sm whitespace-nowrap"
                   >
                     Suggérer
@@ -144,7 +172,7 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
           <Search className="w-16 h-16 mx-auto mb-4 opacity-30" />
           <p>Recherchez un morceau pour commencer</p>
           <p className="text-xs text-gray-500 mt-2">
-            Propulsé par iTunes Search API
+            Propulsé par YouTube
           </p>
         </div>
       )}
