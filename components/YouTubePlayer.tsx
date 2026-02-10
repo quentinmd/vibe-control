@@ -124,7 +124,9 @@ export default function YouTubePlayer({
               // pour garantir que l'iframe YouTube est bien attachée au DOM
               setTimeout(() => {
                 // Vérifier que l'iframe existe vraiment
-                const iframe = document.querySelector('iframe[src*="youtube.com/embed"]');
+                const iframe = document.querySelector(
+                  'iframe[src*="youtube.com/embed"]',
+                );
                 if (iframe) {
                   console.log("✅ iFrame YouTube confirmée dans le DOM");
                 } else {
@@ -234,20 +236,11 @@ export default function YouTubePlayer({
           console.log("▶️ Chargement de la vidéo...");
 
           try {
-            // Vérifier que le player est vraiment prêt et l'iframe existe
-            const iframe = document.querySelector('iframe[src*="youtube.com/embed"]');
-            if (!iframe) {
-              console.error("❌ iFrame YouTube non trouvée, impossible de charger la vidéo");
-              setSearchError(true);
-              setIsLoadingVideo(false);
-              return;
-            }
-            
+            // Le player est prêt (on a déjà vérifié l'iframe dans onReady)
             if (typeof player.loadVideoById === "function") {
               console.log("🎬 Appel loadVideoById avec:", videoIdStr);
-              console.log("✅ iFrame présente, chargement de la vidéo...");
+              console.log("✅ Player prêt, chargement de la vidéo...");
 
-              // Le player est prêt (on a déjà attendu 2s dans onReady)
               player.loadVideoById({
                 videoId: videoIdStr,
                 startSeconds: 0,
