@@ -86,7 +86,10 @@ export default function YouTubePlayer({
 
     console.log("🎬 Création du lecteur YouTube...");
     console.log("🎯 Target element ID:", playerIdRef.current);
-    console.log("🎯 Element exists:", document.getElementById(playerIdRef.current));
+    console.log(
+      "🎯 Element exists:",
+      document.getElementById(playerIdRef.current),
+    );
 
     try {
       const ytPlayer = new window.YT.Player(playerIdRef.current, {
@@ -177,23 +180,23 @@ export default function YouTubePlayer({
         if (videoId) {
           console.log("✅ VideoId trouvé:", videoId);
           console.log("▶️ Chargement de la vidéo...");
-          
+
           try {
             // Vérifier que le player est vraiment prêt
-            if (typeof player.loadVideoById === 'function') {
+            if (typeof player.loadVideoById === "function") {
               player.loadVideoById({
                 videoId: videoId,
                 startSeconds: 0,
-                suggestedQuality: 'default'
+                suggestedQuality: "default",
               });
               hasLoadedTrack.current = currentTrack.id;
               setSearchError(false);
               console.log("✅ Vidéo chargée avec succès");
-              
+
               // Attendre que la vidéo soit cued avant de lancer
               setTimeout(() => {
                 try {
-                  if (player && typeof player.playVideo === 'function') {
+                  if (player && typeof player.playVideo === "function") {
                     console.log("▶️ Lancement de la lecture...");
                     player.playVideo();
                   }
@@ -218,20 +221,20 @@ export default function YouTubePlayer({
 
           if (fallbackVideoId) {
             console.log("✅ Fallback réussi:", fallbackVideoId);
-            
+
             try {
-              if (typeof player.loadVideoById === 'function') {
+              if (typeof player.loadVideoById === "function") {
                 player.loadVideoById({
                   videoId: fallbackVideoId,
                   startSeconds: 0,
-                  suggestedQuality: 'default'
+                  suggestedQuality: "default",
                 });
                 hasLoadedTrack.current = currentTrack.id;
                 setSearchError(false);
-                
+
                 setTimeout(() => {
                   try {
-                    if (player && typeof player.playVideo === 'function') {
+                    if (player && typeof player.playVideo === "function") {
                       player.playVideo();
                     }
                   } catch (e) {

@@ -2,7 +2,7 @@
 
 ## ⚡ Action à Faire MAINTENANT
 
-Tu as déjà créé une clé YouTube API (`AIzaSyBEJXx...`) et l'as ajoutée dans ton `.env.local`. 
+Tu as déjà créé une clé YouTube API (`AIzaSyBEJXx...`) et l'as ajoutée dans ton `.env.local`.
 
 **BUT** : Elle fonctionne en local mais **PAS en production sur Vercel** !
 
@@ -44,6 +44,7 @@ Value:        AIzaSyBEJXx-0-Uau-1wbO_4ZxyE5nDbzUSnXVw
 ### 6. Coche les Environnements
 
 Coche les 3 cases :
+
 - ✅ **Production**
 - ✅ **Preview**
 - ✅ **Development**
@@ -98,11 +99,13 @@ Au lieu de :
 ## 🎯 Résultat Attendu
 
 **Avant** (sans clé dans Vercel) :
+
 - ❌ Erreur 503 (Invidious down)
 - ❌ Rectangle noir
 - ❌ Pas de musique
 
 **Après** (avec clé dans Vercel) :
+
 - ✅ Recherche via YouTube API officielle
 - ✅ VideoId trouvé en <1 seconde
 - ✅ Vidéo se charge dans l'iframe
@@ -115,6 +118,7 @@ Au lieu de :
 ### Problème : "⚠️ Pas de clé YouTube API"
 
 **Solution** :
+
 1. Vérifie que le nom est exactement `YOUTUBE_API_KEY` (pas d'espace, pas de `NEXT_PUBLIC_`)
 2. Vérifie que "Production" est bien coché
 3. Attends que le redéploiement soit terminé (onglet Deployments → Status "Ready")
@@ -126,6 +130,7 @@ Au lieu de :
 ### Problème : Vidéo se charge mais pas de son
 
 **Solutions** :
+
 1. Clique n'importe où dans la page (autoplay bloqué par Safari/Chrome)
 2. Clique sur le bouton ▶️ Play
 3. Vérifie le volume du système
@@ -135,6 +140,7 @@ Au lieu de :
 ## 🎉 C'est Tout !
 
 Une fois la clé ajoutée dans Vercel et redéployé :
+
 - La recherche YouTube sera instantanée
 - Fiable à 99%
 - Plus de dépendance à Invidious
