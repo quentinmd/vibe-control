@@ -11,8 +11,9 @@ interface HostDashboardProps {
 
 export default function HostDashboard({ session }: HostDashboardProps) {
   const [pendingTracks, setPendingTracks] = useState<Track[]>([]);
-  const [approvedTracks, setApprovedTracks] = useSt
+  const [approvedTracks, setApprovedTracks] = useState<Track[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Mettre à jour le morceau en cours quand la playlist change
   useEffect(() => {
@@ -21,8 +22,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
     } else if (approvedTracks.length === 0) {
       setCurrentTrack(null);
     }
-  }, [approvedTracks]);ate<Track[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  }, [approvedTracks, currentTrack]);
 
   // Charger les tracks initiales
   useEffect(() => {
@@ -131,39 +131,30 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   const handleReject = async (trackId: string) => {
     try {
       const { error } = await supabase
+        .from("tracks")
+        .update({ status: "rejected" })
+        .eq("id", trackId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Erreur rejet:", error);
+    }
+  };
+
   // Gérer la fin d'un morceau
   const handleTrackEnd = async (trackId: string) => {
     try {
       // Marquer comme "played"
       await supabase
-        .from('tracks')
-        .update({ status: 'played', played_at: new Date().toISOString() })
-        .eq('id', trackId);
+        .from("tracks")
+        .update({ status: "played", played_at: new Date().toISOString() })
+        .eq("id", trackId);
 
       // Passer au suivant
-      const nextTrack = approvedTracks.find(t => t.id !== trackId);
+      const nextTrack = approvedTracks.find((t) => t.id !== trackId);
       setCurrentTrack(nextTrack || null);
     } catch (error) {
-      console.error('Erreur fin track:', error);
-    }
-  };
-
-        .from("tracks")
-        .update({ status: "rejected" })
-        .eq("id", trspace-y-6">
-      {/* LECTEUR YOUTUBE */}
-      <YouTubePlayer
-        currentTrack={currentTrack}
-        playlist={approvedTracks}
-        onTrackEnd={handleTrackEnd}
-      />
-
-      {/* GRILLE 2 COLONNES */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  
-      if (error) throw error;
-    } catch (error) {
-      console.error("Erreur rejet:", error);
+      console.error("Erreur fin track:", error);
     }
   };
 
@@ -176,143 +167,151 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-      {/* COLONNE 1: EN ATTENTE */}
-      <div className="bg-dark-card rounded-xl p-6 border border-neon-violet/30">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Clock className="w-6 h-6 text-neon-cyan" />
-            En Attente
-          </h2>
-          <span className="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded-full text-sm font-semibold">
-            {pendingTracks.length}
-          </span>
-        </div>
+    <div className="space-y-6">
+      {/* LECTEUR YOUTUBE */}
+      <YouTubePlayer
+        currentTrack={currentTrack}
+        playlist={approvedTracks}
+        onTrackEnd={handleTrackEnd}
+      />
 
-        <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-          {pendingTracks.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
-              <Music className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Aucune suggestion en attente</p>
-            </div>
-          ) : (
-            pendingTracks.map((track) => (
-              <div
-                key={track.id}
-                className="bg-dark-bg rounded-lg p-4 border border-neon-violet/20 animate-slide-in hover:border-neon-violet/50 transition-all"
-              >
-                <div className="flex items-start gap-3">
-                  {track.cover_url ? (
-                    <img
-                      src={track.cover_url}
-                      alt={track.title}
-                      className="w-16 h-16 rounded object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded bg-neon-violet/20 flex items-center justify-center">
-                      <Music className="w-6 h-6 text-neon-violet" />
-                    </div>
-                  )}
+      {/* GRILLE 2 COLONNES */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* COLONNE 1: EN ATTENTE */}
+        <div className="bg-dark-card rounded-xl p-6 border border-neon-violet/30">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Clock className="w-6 h-6 text-neon-cyan" />
+              En Attente
+            </h2>
+            <span className="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded-full text-sm font-semibold">
+              {pendingTracks.length}
+            </span>
+          </div>
 
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white truncate">
-                      {track.title}
-                    </h3>
-                    <p className="text-sm text-gray-400 truncate">
-                      {track.artist}
-                    </p>
-                    {track.suggested_by && (
-                      <p className="text-xs text-neon-cyan mt-1">
-                        Par {track.suggested_by}
-                      </p>
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+            {pendingTracks.length === 0 ? (
+              <div className="text-center text-gray-400 py-12">
+                <Music className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Aucune suggestion en attente</p>
+              </div>
+            ) : (
+              pendingTracks.map((track) => (
+                <div
+                  key={track.id}
+                  className="bg-dark-bg rounded-lg p-4 border border-neon-violet/20 animate-slide-in hover:border-neon-violet/50 transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    {track.cover_url ? (
+                      <img
+                        src={track.cover_url}
+                        alt={track.title}
+                        className="w-16 h-16 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded bg-neon-violet/20 flex items-center justify-center">
+                        <Music className="w-6 h-6 text-neon-violet" />
+                      </div>
                     )}
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-white truncate">
+                        {track.title}
+                      </h3>
+                      <p className="text-sm text-gray-400 truncate">
+                        {track.artist}
+                      </p>
+                      {track.suggested_by && (
+                        <p className="text-xs text-neon-cyan mt-1">
+                          Par {track.suggested_by}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => handleApprove(track.id)}
+                      className="flex-1 btn-neon bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      Valider
+                    </button>
+                    <button
+                      onClick={() => handleReject(track.id)}
+                      className="flex-1 btn-neon bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2"
+                    >
+                      <X className="w-4 h-4" />
+                      Refuser
+                    </button>
                   </div>
                 </div>
+              ))
+            )}
+          </div>
+        </div>
 
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => handleApprove(track.id)}
-                    className="flex-1 btn-neon bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    Valider
-                  </button>
-                  <button
-                    onClick={() => handleReject(track.id)}
-                    className="flex-1 btn-neon bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    Refuser
-                  </button>
-                </div>
+        {/* COLONNE 2: PLAYLIST ACTIVE */}
+        <div className="bg-dark-card rounded-xl p-6 border border-neon-cyan/30">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <PartyPopper className="w-6 h-6 text-neon-violet" />
+              Playlist Active
+            </h2>
+            <span className="px-3 py-1 bg-neon-violet/20 text-neon-violet rounded-full text-sm font-semibold">
+              {approvedTracks.length}
+            </span>
+          </div>
+
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+            {approvedTracks.length === 0 ? (
+              <div className="text-center text-gray-400 py-12">
+                <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Validez des suggestions pour commencer</p>
               </div>
-            ))
-          )}
-        </div>
-      </div>
+            ) : (
+              approvedTracks.map((track, index) => (
+                <div
+                  key={track.id}
+                  className="bg-dark-bg rounded-lg p-4 border border-neon-cyan/20 animate-slide-in hover:border-neon-cyan/50 transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-neon-violet flex items-center justify-center font-bold text-sm">
+                      {index + 1}
+                    </span>
 
-      {/* COLONNE 2: PLAYLIST ACTIVE */}
-      <div className="bg-dark-card rounded-xl p-6 border border-neon-cyan/30">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <PartyPopper className="w-6 h-6 text-neon-violet" />
-            Playlist Active
-          </h2>
-          <span className="px-3 py-1 bg-neon-violet/20 text-neon-violet rounded-full text-sm font-semibold">
-            {approvedTracks.length}
-          </span>
-        </div>
-
-        <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-          {approvedTracks.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
-              <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Validez des suggestions pour commencer</p>
-            </div>
-          ) : (
-            approvedTracks.map((track, index) => (
-              <div
-                key={track.id}
-                className="bg-dark-bg rounded-lg p-4 border border-neon-cyan/20 animate-slide-in hover:border-neon-cyan/50 transition-all"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-neon-violet flex items-center justify-center font-bold text-sm">
-                    {index + 1}
-                  </span>
-
-                  {track.cover_url ? (
-                    <img
-                      src={track.cover_url}
-                      alt={track.title}
-                      className="w-16 h-16 rounded object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded bg-neon-cyan/20 flex items-center justify-center">
-                      <Music className="w-6 h-6 text-neon-cyan" />
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white truncate">
-                      {track.title}
-                    </h3>
-                    <p className="text-sm text-gray-400 truncate">
-                      {track.artist}
-                    </p>
-                    {track.suggested_by && (
-                      <p className="text-xs text-neon-violet mt-1">
-                        Suggéré par {track.suggested_by}
-                      </p>
+                    {track.cover_url ? (
+                      <img
+                        src={track.cover_url}
+                        alt={track.title}
+                        className="w-16 h-16 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded bg-neon-cyan/20 flex items-center justify-center">
+                        <Music className="w-6 h-6 text-neon-cyan" />
+                      </div>
                     )}
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-white truncate">
+                        {track.title}
+                      </h3>
+                      <p className="text-sm text-gray-400 truncate">
+                        {track.artist}
+                      </p>
+                      {track.suggested_by && (
+                        <p className="text-xs text-neon-violet mt-1">
+                          Suggéré par {track.suggested_by}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
-    </div>
-    {/* Fin de la grille 2 colonnes */}
     </div>
   );
 }
