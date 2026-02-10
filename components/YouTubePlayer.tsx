@@ -196,17 +196,22 @@ export default function YouTubePlayer({
           // Validation du videoId (doit être une string de 11 caractères)
           const videoIdStr = String(videoId).trim();
           const isValidFormat = /^[a-zA-Z0-9_-]{11}$/.test(videoIdStr);
-          
+
           console.log("✅ VideoId trouvé:", videoIdStr);
-          console.log("📏 Longueur:", videoIdStr.length, "/ Format valide:", isValidFormat);
-          
+          console.log(
+            "📏 Longueur:",
+            videoIdStr.length,
+            "/ Format valide:",
+            isValidFormat,
+          );
+
           if (!isValidFormat) {
             console.error("❌ Format videoId invalide:", videoIdStr);
             setSearchError(true);
             setIsLoadingVideo(false);
             return;
           }
-          
+
           console.log("▶️ Chargement de la vidéo...");
 
           try {

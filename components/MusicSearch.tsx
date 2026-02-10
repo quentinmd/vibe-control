@@ -39,10 +39,10 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
     try {
       // Recherche directement sur YouTube via notre API
       console.log("🔍 Recherche YouTube pour:", searchQuery);
-      
+
       const response = await fetch(
         `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
-        { signal: AbortSignal.timeout(10000) }
+        { signal: AbortSignal.timeout(10000) },
       );
 
       if (!response.ok) {
@@ -50,7 +50,7 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
       }
 
       const data = await response.json();
-      
+
       if (data.videoId) {
         // Créer un résultat unique depuis la réponse YouTube
         const result: YouTubeSearchResult = {
@@ -150,11 +150,13 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
                   </div>
 
                   <button
-                    onClick={() => onSelectTrack({
-                      title: track.title,
-                      artist: track.artist,
-                      cover_url: track.thumbnail,
-                    })}
+                    onClick={() =>
+                      onSelectTrack({
+                        title: track.title,
+                        artist: track.artist,
+                        cover_url: track.thumbnail,
+                      })
+                    }
                     className="btn-neon btn-neon-secondary px-4 py-2 text-sm whitespace-nowrap"
                   >
                     Suggérer
@@ -171,9 +173,7 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
         <div className="text-center py-12 text-gray-400">
           <Search className="w-16 h-16 mx-auto mb-4 opacity-30" />
           <p>Recherchez un morceau pour commencer</p>
-          <p className="text-xs text-gray-500 mt-2">
-            Propulsé par YouTube
-          </p>
+          <p className="text-xs text-gray-500 mt-2">Propulsé par YouTube</p>
         </div>
       )}
 
