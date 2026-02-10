@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Play,
   Pause,
@@ -38,7 +38,8 @@ export default function YouTubePlayer({
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const [searchError, setSearchError] = useState(false);
-  const playerRef = useRef<HTMLDivElement>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const playerDivRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedTrack = useRef<string | null>(null);
   const playerIdRef = useRef(`youtube-player-${Date.now()}`);
 
@@ -84,30 +85,30 @@ export default function YouTubePlayer({
       return;
     }
 
-    // Attendre que le DOM soit prêt avec un petit délai
+    // Attendre que le DOM soit prêt
     const timer = setTimeout(() => {
-      const targetElement = document.getElementById(playerIdRef.current);
-
-      if (!targetElement) {
-        console.error(
-          "❌ Élément player introuvable dans le DOM:",
-          playerIdRef.current,
-        );
-        console.error(
-          "⚠️ Le div n'existe pas encore. Vérifiez le rendu du composant.",
-        );
+      if (!playerContainerRef.current) {
+        console.error("❌ Conteneur player introuvable");
         return;
+      }
+
+      // Créer le div du player de manière impérative s'il n'existe pas
+      if (!playerDivRef.current) {
+        const playerDiv = document.createElement("div");
+        playerDiv.id = playerIdRef.current;
+        playerDiv.className = "w-full aspect-video";
+        playerContainerRef.current.appendChild(playerDiv);
+        playerDivRef.current = playerDiv;
+        console.log("✅ Div player créé de manière impérative");
       }
 
       console.log("🎬 Création du lecteur YouTube...");
       console.log("🎯 Target element ID:", playerIdRef.current);
-      console.log("✅ Element trouvé dans le DOM");
 
       try {
         const ytPlayer = new window.YT.Player(playerIdRef.current, {
           height: "360",
           width: "100%",
-          // Ne pas inclure videoId lors de la création - on chargera avec loadVideoById après
           playerVars: {
             autoplay: 0,
             controls: 1,
@@ -115,14 +116,14 @@ export default function YouTubePlayer({
             rel: 0,
             fs: 0,
             enablejsapi: 1,
-            origin: window.location.origin, // Ajouter l'origine pour éviter les problèmes CORS
+            origin: window.location.origin,
           },
           events: {
             onReady: (event: any) => {
               console.log("✅ YouTube Player prêt et opérationnel !");
               const playerInstance = event.target;
 
-              // Vérifier que l'iframe est attachée au DOM avant de continuer
+              // Vérifier que l'iframe est attachée au DOM
               const checkIframeAttached = () => {
                 try {
                   const iframe = playerInstance.getIframe();
@@ -195,9 +196,20 @@ export default function YouTubePlayer({
         console.error("❌ Erreur création player:", error);
         setSearchError(true);
       }
-    }, 100); // Délai de 100ms pour laisser le DOM se monter
+    }, 100);
 
-    return () => clearTimeout(timer);
+    // Nettoyage : détruire le player quand le composant est démonté
+    return () => {
+      clearTimeout(timer);
+      if (player) {
+        try {
+          player.destroy();
+          console.log("🗑️ Player YouTube détruit");
+        } catch (e) {
+          console.warn("⚠️ Erreur destruction player:", e);
+        }
+      }
+    };
   }, [isAPIReady, player, currentTrack]);
 
   // Charger une nouvelle vidéo quand le track change
@@ -506,11 +518,7 @@ export default function YouTubePlayer({
             </div>
           </div>
         )}
-        <div
-          id={playerIdRef.current}
-          ref={playerRef}
-          className="w-full aspect-video"
-        />
+        <div ref={playerContainerRef} className="w-full aspect-video" />
       </div>
 
       {/* Message d'état */}
