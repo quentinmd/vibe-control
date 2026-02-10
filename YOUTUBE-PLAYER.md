@@ -1,220 +1,360 @@
-# 🎵 Lecteur YouTube Intégré - Guide
+# 🎵 Lecteur YouTube Intégré - Vibe Control
 
-## ✅ Ce Qui a Été Ajouté
+## ✅ Version Actuelle : Lecteur Automatique Complet
 
-### 1. Nouveau Composant : `YouTubePlayer.tsx`
+Le lecteur YouTube est **maintenant pleinement fonctionnel** avec lecture automatique !
 
-Lecteur YouTube intégré dans l'interface Host avec :
+### 🎯 Fonctionnalités Implémentées
 
-- ✅ Affichage du morceau en cours
-- ✅ Bouton pour ouvrir sur YouTube
-- ✅ File d'attente visible
-- ✅ Gestion automatique du passage au suivant
-- ✅ Marquage "played" dans la base de données
-
-### 2. Intégration dans `HostDashboard.tsx`
-
-- Zone de lecteur en haut
-- Les deux colonnes (En Attente / Playlist Active) en dessous
-- Synchronisation automatique avec la playlist
-
-### 3. Service YouTube : `youtubeApi.ts`
-
-Utilitaires pour :
-
-- Recherche YouTube (avec API key optionnelle)
-- Construction d'URLs YouTube
-- Extraction de videoId
+✅ **Lecteur iframe YouTube intégré** visible dans le dashboard  
+✅ **Auto-play automatique** dès qu'un morceau est validé  
+✅ **Recherche automatique** du videoId via Invidious API (gratuit, sans clé)  
+✅ **Passage automatique** au morceau suivant quand une vidéo se termine  
+✅ **Contrôles fonctionnels** : Play/Pause, Skip, Mute  
+✅ **Affichage de la file d'attente** avec les 3 prochains morceaux  
+✅ **État de chargement** avec spinner pendant la recherche
 
 ---
 
-## 🎯 Comment Ça Marche
+## 🎬 Comment Ça Fonctionne
 
 ### Flow Complet
 
-1. **Invité suggère un morceau** via `/guest/[sessionId]`
-2. **Hôte valide** la suggestion (bouton "Valider")
-3. **Le morceau passe dans "Playlist Active"**
-4. **Le lecteur YouTube l'affiche** en haut de l'écran
-5. **Hôte clique sur le bouton YouTube** 🎵
-6. **YouTube s'ouvre** avec la recherche automatique "Artist - Title official"
-7. **Quand un morceau est terminé** → Passe automatiquement au suivant
+1. **L'hôte valide une suggestion** → Le morceau passe en "approved"
+2. **Le lecteur cherche automatiquement** la vidéo YouTube correspondante
+3. **La vidéo se lance automatiquement** dans l'iframe intégré
+4. **Quand la vidéo se termine** → Passage automatique au morceau suivant
+5. **L'hôte peut contrôler** : pause, reprendre, passer, couper le son
+
+### Exemple Concret
+
+```
+Invité suggère : "Daft Punk - Get Lucky"
+           ↓
+Hôte valide la suggestion
+           ↓
+Lecteur cherche sur YouTube via Invidious API
+           ↓
+Trouve le videoId : "5NV6Rdv1a3I"
+           ↓
+Charge et lance automatiquement dans l'iframe
+           ↓
+Musique en lecture ! 🎵
+           ↓
+Vidéo terminée → Passe au morceau suivant
+```
 
 ---
 
-## 📱 Version Actuelle (MVP)
+## 🔧 Architecture Technique
 
-### Fonctionnement Simple
+### 1. YouTube IFrame API
 
-- Le lecteur affiche le morceau en cours
-- Un bouton **"Ouvrir sur YouTube"** lance la recherche dans un nouvel onglet
-- L'hôte lance manuellement la musique sur YouTube
+**Fichier**: `components/YouTubePlayer.tsx`
 
-### Pourquoi Cette Approche ?
+```typescript
+// Chargement automatique de l'API YouTube
+useEffect(() => {
+  const tag = document.createElement("script");
+  tag.src = "https://www.youtube.com/iframe_api";
+  // ... chargement
+}, []);
 
-- ✅ **Aucune clé API nécessaire**
-- ✅ **Pas de quota à gérer**
-- ✅ **Fonctionne immédiatement**
-- ✅ **Pas de problème de copyright**
-- ✅ **L'hôte garde le contrôle total**
+// Création du lecteur avec auto-play activé
+new window.YT.Player(playerRef.current, {
+  playerVars: {
+    autoplay: 1,    // ✅ Lecture automatique
+    controls: 1,    // Afficher les contrôles
+    modestbranding: 1,
+    rel: 0,
+    fs: 0,
+  },
+  events: {
+    onStateChange: (event) => {
+      if (event.data === YT.PlayerState.ENDED) {
+        handleTrackEnd(); // Passer au suivant
+      }
+    },
+  },
+});
+```
+
+### 2. Recherche de VideoId (Sans API Key)
+
+**Fichier**: `lib/youtubeApi.ts`
+
+```typescript
+export async function searchYouTubeNoAPI(query: string): Promise<string | null> {
+  // Utilise l'API Invidious (front-end YouTube alternatif)
+  const invidiousInstance = "https://invidious.jing.rocks";
+  const response = await fetch(
+    `${invidiousInstance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`
+  );
+  
+  const data = await response.json();
+  return data[0]?.videoId || null;
+}
+```
+
+**Avantages** :
+- ✅ Gratuit (pas de clé API nécessaire)
+- ✅ Pas de quota
+- ✅ Rapide
+- ⚠️ Dépend de l'instance Invidious (peut changer)
+
+### 3. Gestion du Cycle de Vie
+
+```typescript
+// Quand le morceau change
+useEffect(() => {
+  if (!player || !currentTrack) return;
+  
+  // Éviter de recharger le même morceau
+  if (hasLoadedTrack.current === currentTrack.id) return;
+  
+  const loadVideo = async () => {
+    setIsLoadingVideo(true);
+    
+    // Recherche YouTube
+    const searchQuery = `${currentTrack.artist} ${currentTrack.title} official audio`;
+    const videoId = await searchYouTubeNoAPI(searchQuery);
+    
+    if (videoId) {
+      player.loadVideoById(videoId); // ✅ Charge et lance
+      hasLoadedTrack.current = currentTrack.id;
+    }
+    
+    setIsLoadingVideo(false);
+  };
+  
+  loadVideo();
+}, [currentTrack, player]);
+```
 
 ---
 
-## 🚀 Amélioration Future : Lecteur Automatique
+## 🎛️ Contrôles Disponibles
 
-Pour avoir un vrai lecteur intégré (iframe YouTube), vous devrez :
+### Interface Utilisateur
 
-### Option A : YouTube IFrame API (Sans API Key)
+Le lecteur affiche :
 
-**Avantages** :
+1. **Info du morceau** :
+   - Pochette d'album
+   - Titre
+   - Artiste
+   - Nom de celui qui a suggéré
 
-- Gratuit et sans clé
-- Lecture directe dans l'interface
+2. **Lecteur YouTube** :
+   - Iframe vidéo intégré (16:9)
+   - Spinner de chargement pendant la recherche
 
-**Inconvénients** :
+3. **Contrôles** :
+   - ▶️ Play / ⏸️ Pause
+   - ⏭️ Skip (passer au suivant)
+   - 🔊 Mute / 🔇 Unmute
 
-- Nécessite de chercher manuellement le videoId
-- Pas d'API de recherche sans clé
-- L'utilisateur doit avoir une bonne connexion
+4. **File d'attente** :
+   - 3 prochains morceaux visibles
+   - Ordre de lecture
 
-**Implémentation** :
-Le code est déjà préparé dans `YouTubePlayer.tsx` (lignes commentées).
+### Raccourcis Clavier YouTube
 
-### Option B : YouTube Data API v3 (Avec API Key)
+Les contrôles YouTube natifs fonctionnent :
+- **Espace** : Play/Pause
+- **K** : Play/Pause
+- **J** : Reculer de 10s
+- **L** : Avancer de 10s
+- **M** : Mute/Unmute
+- **↑/↓** : Volume
 
-**Avantages** :
+---
 
-- Recherche automatique de vidéos
-- Meilleure expérience utilisateur
-- Métadonnées complètes
+## 🔄 Alternatives d'API de Recherche
 
-**Inconvénients** :
+### Option 1 : Invidious (Actuelle - GRATUITE) ✅
 
-- Nécessite une clé API (gratuite)
-- Quota : 10,000 unités/jour = ~100 recherches
+```typescript
+// Instance publique Invidious
+const invidiousInstance = "https://invidious.jing.rocks";
+const response = await fetch(
+  `${invidiousInstance}/api/v1/search?q=${query}&type=video`
+);
+```
 
-**Configuration** :
+**Avantages** : Gratuit, pas de clé  
+**Inconvénients** : Dépendance externe
 
-1. Obtenez une clé API YouTube (voir guide ci-dessous)
-2. Ajoutez dans `.env.local` :
-   ```env
-   NEXT_PUBLIC_YOUTUBE_API_KEY=votre_cle_api
+### Option 2 : YouTube Data API v3 (Officielle)
+
+```typescript
+// Nécessite NEXT_PUBLIC_YOUTUBE_API_KEY dans .env.local
+const API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+const response = await fetch(
+  `https://www.googleapis.com/youtube/v3/search?` +
+  `part=snippet&type=video&maxResults=1&q=${query}&key=${API_KEY}`
+);
+```
+
+**Avantages** : Officiel, fiable  
+**Inconvénients** : Quota limité (10,000 unités/jour = ~100 recherches)
+
+**Pour activer** :
+1. Créer un projet sur [Google Cloud Console](https://console.cloud.google.com)
+2. Activer "YouTube Data API v3"
+3. Créer une clé API
+4. Ajouter dans `.env.local` :
+   ```bash
+   NEXT_PUBLIC_YOUTUBE_API_KEY=AIzaSy...
    ```
-3. Le code utilisera automatiquement l'API si la clé est présente
+5. Le code détectera automatiquement la clé et l'utilisera
+
+### Option 3 : Autres Instances Invidious
+
+Si `invidious.jing.rocks` est down, utilisez :
+- `https://invidious.snopyta.org`
+- `https://yewtu.be`
+- `https://inv.riverside.rocks`
+
+Liste complète : [https://api.invidious.io/](https://api.invidious.io/)
 
 ---
 
-## 🔑 Obtenir une Clé YouTube API (Gratuit)
+## 📊 Base de Données
 
-### Étape 1 : Google Cloud Console
+### Colonnes Utilisées
 
-1. Allez sur [console.cloud.google.com](https://console.cloud.google.com/)
-2. Créez un projet "Vibe Control"
-3. Activez "YouTube Data API v3"
-
-### Étape 2 : Créer une Clé
-
-1. Allez dans **APIs & Services > Credentials**
-2. Cliquez **Create Credentials > API Key**
-3. Copiez la clé générée
-
-### Étape 3 : Sécuriser (Recommandé)
-
-1. Cliquez sur la clé créée
-2. **Application restrictions** : HTTP referrers
-3. Ajoutez :
-   - `https://votre-domaine.vercel.app/*`
-   - `http://localhost:3000/*` (pour dev)
-
-### Étape 4 : Configurer Vibe Control
-
-Ajoutez dans `.env.local` :
-
-```env
-NEXT_PUBLIC_YOUTUBE_API_KEY=AIzaSy...
+Table `tracks` :
+```sql
+- id (uuid)
+- title (text)         -- Titre de la chanson
+- artist (text)        -- Artiste
+- cover_url (text)     -- Pochette iTunes
+- status (text)        -- "pending" → "approved" → "played"
+- played_at (timestamp) -- Horodatage quand marqué "played"
+- suggested_by (text)  -- Nom de l'invité
 ```
 
-Redéployez sur Vercel avec la nouvelle variable d'environnement.
+### Cycle de Vie d'un Morceau
 
----
-
-## 🎨 Personnalisation
-
-### Changer le Comportement du Lecteur
-
-Dans `components/YouTubePlayer.tsx`, vous pouvez :
-
-1. **Activer le lecteur intégré** (décommentez lignes 89-105)
-2. **Activer les contrôles** (supprimez `opacity-50 pointer-events-none`)
-3. **Changer l'autoplay** (modifiez `playerVars.autoplay`)
-
-### Modifier la Recherche YouTube
-
-Dans `lib/youtubeApi.ts` :
-
-- `getYouTubeSearchUrl()` : Construire l'URL de recherche
-- `searchYouTube()` : Utiliser l'API pour trouver le videoId
-
----
-
-## 🧪 Tester
-
-```bash
-npm run dev
+```
+pending (invité suggère)
+   ↓
+approved (hôte valide)
+   ↓
+played (vidéo terminée)
 ```
 
-### Scénario de Test
+---
 
-1. Allez sur `/host`, créez une session
-2. Sur `/guest/[sessionId]`, recherchez "Dua Lipa"
-3. Suggérez "Levitating"
-4. Sur Host, validez la suggestion
-5. ✅ **Le lecteur YouTube apparaît en haut avec le morceau**
-6. Cliquez sur le bouton **YouTube** (icône rouge)
-7. 🎵 YouTube s'ouvre avec "Dua Lipa Levitating official"
+## 🐛 Dépannage
+
+### Le lecteur ne charge rien
+
+1. **Vérifier la console** : `console.log("🎵 Chargement vidéo YouTube:", videoId)`
+2. **Tester Invidious manuellement** :
+   ```
+   https://invidious.jing.rocks/api/v1/search?q=daft+punk+get+lucky&type=video
+   ```
+3. **Si l'instance est down** : Changer dans `lib/youtubeApi.ts` ligne 22
+
+### Les vidéos ne se lancent pas automatiquement
+
+- **Politique des navigateurs** : certains bloquent l'autoplay
+- **Solution** : L'utilisateur doit interagir une première fois (clic n'importe où)
+- Chrome, Firefox, Safari ont des règles différentes
+
+### Les contrôles ne fonctionnent pas
+
+1. Vérifier que `player` n'est pas `null`
+2. Attendre que `isAPIReady === true`
+3. Vérifier la console pour les erreurs
+
+### Mauvaise vidéo chargée
+
+- Affiner la recherche : ajouter "official", "audio", "lyrics"
+- Utiliser l'API officielle YouTube pour plus de précision
+- Stocker manuellement le `videoId` dans la BDD
 
 ---
 
-## 📊 Comparaison des Options
+## 🚀 Améliorations Futures
 
-| Option                      | Gratuit | Setup      | UX         | Contrôle   |
-| --------------------------- | ------- | ---------- | ---------- | ---------- |
-| **Bouton YouTube** (Actuel) | ✅      | ⭐⭐⭐⭐⭐ | ⭐⭐⭐     | ⭐⭐⭐⭐⭐ |
-| **IFrame Sans API**         | ✅      | ⭐⭐⭐     | ⭐⭐⭐⭐   | ⭐⭐⭐⭐   |
-| **YouTube API**             | ✅      | ⭐⭐⭐⭐   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐   |
-| **Spotify** (Désactivé)     | ❌      | ⭐         | ⭐⭐⭐⭐⭐ | ⭐⭐       |
+### À Court Terme
 
-**Recommandation MVP** : Gardez le **bouton YouTube** (simple et efficace)
+- [ ] **Cache des videoId** : Stocker dans `tracks.spotify_id` pour éviter recherches répétées
+- [ ] **Fallback intelligent** : Si Invidious down → essayer YouTube API → fallback manuel
+- [ ] **Préchargement** : Charger le prochain morceau en avance
 
-**Pour Production** : Passez à **YouTube API** avec clé gratuite
+### À Moyen Terme
 
----
+- [ ] **Visualiseur audio** : Afficher un spectrogramme
+- [ ] **Paroles synchronisées** : Via Genius API ou Musixmatch
+- [ ] **Historique de lecture** : Page dédiée avec stats
 
-## 🆘 Dépannage
+### À Long Terme
 
-### Le lecteur n'apparaît pas
-
-→ Vérifiez qu'il y a au moins 1 morceau validé dans "Playlist Active"
-
-### Le bouton YouTube ne fait rien
-
-→ Vérifiez que le popup n'est pas bloqué par le navigateur
-
-### "YouTube API quota exceeded"
-
-→ Vous avez dépassé 10,000 unités/jour (rare). Réessayez demain ou passez au plan payant YouTube.
-
-### Erreur CORS
-
-→ Ajoutez votre domaine Vercel dans les restrictions de la clé API
+- [ ] **Support multi-source** : YouTube + Spotify + Deezer
+- [ ] **DJ Mode** : Crossfade entre morceaux
+- [ ] **Requests payants** : Priorité dans la queue
 
 ---
 
-## 📝 Prochaines Étapes
+## 📝 Utilisation
 
-1. ✅ Testez le lecteur actuel (bouton YouTube)
-2. ⏭️ Déployez sur Vercel
-3. 🔑 (Optionnel) Ajoutez YouTube API key
-4. 🎵 (Optionnel) Activez le lecteur intégré
+### Pour l'Hôte
 
-**Le système fonctionne parfaitement SANS clé API grâce au bouton YouTube !** 🎉
+1. Créer une session sur `/host`
+2. Valider des suggestions dans "En Attente"
+3. **Le lecteur se lance automatiquement** ✅
+4. Utiliser les contrôles si besoin (pause, skip, mute)
+5. Surveiller la file d'attente
+
+### Pour les Invités
+
+1. Scanner le QR code ou aller sur `/guest/[sessionId]`
+2. Chercher une chanson (iTunes Search API)
+3. Suggérer → Attend validation de l'hôte
+4. Si validé → **Passera automatiquement sur le lecteur de l'hôte**
+
+---
+
+## 💡 Conseils
+
+### Pour une Expérience Optimale
+
+1. **Écran dédié** : Ouvrir `/host` sur un écran/tablette séparé
+2. **Volume** : Connecter des enceintes à l'appareil de l'hôte
+3. **Interaction initiale** : Cliquer une fois dans la page pour autoriser l'autoplay
+4. **Connexion stable** : Wi-Fi fiable pour éviter les coupures
+
+### Pour les Soirées
+
+- Pré-valider quelques morceaux avant l'arrivée des invités
+- Mettre l'écran hôte en affichage public
+- Encourager les invités à suggérer tôt dans la soirée
+
+---
+
+## 📦 Fichiers Concernés
+
+```
+components/
+  └── YouTubePlayer.tsx        # Composant lecteur principal
+  └── HostDashboard.tsx         # Intègre le lecteur
+
+lib/
+  └── youtubeApi.ts             # Recherche de videoId
+
+supabase/
+  └── schema.sql                # Table tracks avec status
+```
+
+---
+
+## 🎉 Résultat Final
+
+**Avant** : L'hôte devait manuellement ouvrir YouTube dans un nouvel onglet  
+**Maintenant** : Tout se fait automatiquement ! Validation → Lecture → Suivant
+
+**MVP complet fonctionnel !** 🚀
