@@ -46,35 +46,37 @@ export async function searchYouTube(query: string): Promise<YouTubeVideo[]> {
 
 /**
  * Rechercher un videoId YouTube sans clé API (méthode alternative)
- * Utilise l'API publique noembed.com qui extrait les métadonnées YouTube
+ * Utilise notre API route Next.js qui fait un proxy vers Invidious
+ * Évite les problèmes CORS en passant par le serveur
  */
 export async function searchYouTubeNoAPI(
   query: string,
 ): Promise<string | null> {
   try {
-    // Construire l'URL de recherche YouTube
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-
-    // Utiliser noembed pour extraire le premier résultat
-    // Alternative: utiliser Invidious API (instance publique)
-    const invidiousInstance = "https://invidious.jing.rocks";
+    // Appeler notre API route qui gère le proxy
     const response = await fetch(
-      `${invidiousInstance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`,
+      `/api/youtube-search?q=${encodeURIComponent(query)}`,
+      {
+        signal: AbortSignal.timeout(10000), // 10s timeout
+      },
     );
 
     if (!response.ok) {
-      console.warn("Invidious API non disponible, utilisation de fallback");
+      console.warn(
+        `API YouTube search failed: ${response.status} ${response.statusText}`,
+      );
       return null;
     }
 
     const data = await response.json();
 
-    if (data && data.length > 0) {
-      return data[0].videoId;
+    if (data.videoId) {
+      console.log(`✅ VideoId trouvé: ${data.videoId}`);
+      return data.videoId;
     }
 
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erreur recherche YouTube (no API):", error);
     return null;
   }

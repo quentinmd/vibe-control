@@ -7,6 +7,8 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { Track } from "@/lib/supabase";
 import { searchYouTubeNoAPI } from "@/lib/youtubeApi";
@@ -34,6 +36,7 @@ export default function YouTubePlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [isAPIReady, setIsAPIReady] = useState(false);
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
+  const [searchError, setSearchError] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
   const hasLoadedTrack = useRef<string | null>(null);
 
@@ -99,6 +102,7 @@ export default function YouTubePlayer({
 
     const loadVideo = async () => {
       setIsLoadingVideo(true);
+      setSearchError(false);
       try {
         // Construire la requête de recherche
         const searchQuery = `${currentTrack.artist} ${currentTrack.title} official audio`;
@@ -110,18 +114,25 @@ export default function YouTubePlayer({
           console.log("🎵 Chargement vidéo YouTube:", videoId);
           player.loadVideoById(videoId);
           hasLoadedTrack.current = currentTrack.id;
+          setSearchError(false);
         } else {
-          console.error("❌ VideoId non trouvé pour:", searchQuery);
+          console.warn("⚠️ VideoId non trouvé pour:", searchQuery);
           // Fallback: essayer avec une recherche simplifiée
           const simpleQuery = `${currentTrack.artist} ${currentTrack.title}`;
           const fallbackVideoId = await searchYouTubeNoAPI(simpleQuery);
           if (fallbackVideoId) {
+            console.log("✅ Fallback réussi:", fallbackVideoId);
             player.loadVideoById(fallbackVideoId);
             hasLoadedTrack.current = currentTrack.id;
+            setSearchError(false);
+          } else {
+            console.error("❌ Aucun videoId trouvé après fallback");
+            setSearchError(true);
           }
         }
       } catch (error) {
         console.error("Erreur chargement vidéo:", error);
+        setSearchError(true);
       } finally {
         setIsLoadingVideo(false);
       }
@@ -236,6 +247,31 @@ export default function YouTubePlayer({
           <p className="text-sm text-gray-400 text-center">
             ⏳ Chargement du lecteur YouTube...
           </p>
+        </div>
+      )}
+
+      {/* Message d'erreur avec bouton manuel */}
+      {searchError && (
+        <div className="bg-red-900/20 rounded-lg p-4 border border-red-500/30">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-red-300 font-semibold mb-2">
+                Impossible de trouver la vidéo automatiquement
+              </p>
+              <p className="text-xs text-red-400/80 mb-3">
+                Les serveurs de recherche sont temporairement indisponibles.
+                Utilisez le bouton ci-dessous pour lancer manuellement.
+              </p>
+              <button
+                onClick={openInYouTube}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-semibold"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Ouvrir sur YouTube
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

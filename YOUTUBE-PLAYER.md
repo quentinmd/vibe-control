@@ -63,8 +63,8 @@ useEffect(() => {
 // Création du lecteur avec auto-play activé
 new window.YT.Player(playerRef.current, {
   playerVars: {
-    autoplay: 1,    // ✅ Lecture automatique
-    controls: 1,    // Afficher les contrôles
+    autoplay: 1, // ✅ Lecture automatique
+    controls: 1, // Afficher les contrôles
     modestbranding: 1,
     rel: 0,
     fs: 0,
@@ -84,19 +84,22 @@ new window.YT.Player(playerRef.current, {
 **Fichier**: `lib/youtubeApi.ts`
 
 ```typescript
-export async function searchYouTubeNoAPI(query: string): Promise<string | null> {
+export async function searchYouTubeNoAPI(
+  query: string,
+): Promise<string | null> {
   // Utilise l'API Invidious (front-end YouTube alternatif)
   const invidiousInstance = "https://invidious.jing.rocks";
   const response = await fetch(
-    `${invidiousInstance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`
+    `${invidiousInstance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`,
   );
-  
+
   const data = await response.json();
   return data[0]?.videoId || null;
 }
 ```
 
 **Avantages** :
+
 - ✅ Gratuit (pas de clé API nécessaire)
 - ✅ Pas de quota
 - ✅ Rapide
@@ -108,25 +111,25 @@ export async function searchYouTubeNoAPI(query: string): Promise<string | null> 
 // Quand le morceau change
 useEffect(() => {
   if (!player || !currentTrack) return;
-  
+
   // Éviter de recharger le même morceau
   if (hasLoadedTrack.current === currentTrack.id) return;
-  
+
   const loadVideo = async () => {
     setIsLoadingVideo(true);
-    
+
     // Recherche YouTube
     const searchQuery = `${currentTrack.artist} ${currentTrack.title} official audio`;
     const videoId = await searchYouTubeNoAPI(searchQuery);
-    
+
     if (videoId) {
       player.loadVideoById(videoId); // ✅ Charge et lance
       hasLoadedTrack.current = currentTrack.id;
     }
-    
+
     setIsLoadingVideo(false);
   };
-  
+
   loadVideo();
 }, [currentTrack, player]);
 ```
@@ -161,6 +164,7 @@ Le lecteur affiche :
 ### Raccourcis Clavier YouTube
 
 Les contrôles YouTube natifs fonctionnent :
+
 - **Espace** : Play/Pause
 - **K** : Play/Pause
 - **J** : Reculer de 10s
@@ -178,7 +182,7 @@ Les contrôles YouTube natifs fonctionnent :
 // Instance publique Invidious
 const invidiousInstance = "https://invidious.jing.rocks";
 const response = await fetch(
-  `${invidiousInstance}/api/v1/search?q=${query}&type=video`
+  `${invidiousInstance}/api/v1/search?q=${query}&type=video`,
 );
 ```
 
@@ -192,7 +196,7 @@ const response = await fetch(
 const API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
 const response = await fetch(
   `https://www.googleapis.com/youtube/v3/search?` +
-  `part=snippet&type=video&maxResults=1&q=${query}&key=${API_KEY}`
+    `part=snippet&type=video&maxResults=1&q=${query}&key=${API_KEY}`,
 );
 ```
 
@@ -200,6 +204,7 @@ const response = await fetch(
 **Inconvénients** : Quota limité (10,000 unités/jour = ~100 recherches)
 
 **Pour activer** :
+
 1. Créer un projet sur [Google Cloud Console](https://console.cloud.google.com)
 2. Activer "YouTube Data API v3"
 3. Créer une clé API
@@ -212,6 +217,7 @@ const response = await fetch(
 ### Option 3 : Autres Instances Invidious
 
 Si `invidious.jing.rocks` est down, utilisez :
+
 - `https://invidious.snopyta.org`
 - `https://yewtu.be`
 - `https://inv.riverside.rocks`
@@ -225,6 +231,7 @@ Liste complète : [https://api.invidious.io/](https://api.invidious.io/)
 ### Colonnes Utilisées
 
 Table `tracks` :
+
 ```sql
 - id (uuid)
 - title (text)         -- Titre de la chanson
