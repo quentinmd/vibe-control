@@ -120,8 +120,12 @@ export default function YouTubePlayer({
             onReady: (event: any) => {
               console.log("✅ YouTube Player prêt et opérationnel !");
               setPlayer(event.target);
-              setIsPlayerReady(true);
-              console.log("🔓 Player déverrouillé, prêt à charger des vidéos");
+              // Attendre 1 seconde avant de dire que le player est prêt
+              // pour garantir que l'iframe est bien attachée au DOM
+              setTimeout(() => {
+                setIsPlayerReady(true);
+                console.log("🔓 Player déverrouillé, prêt à charger des vidéos");
+              }, 1000);
             },
             onStateChange: (event: any) => {
               const states: any = {
@@ -225,34 +229,27 @@ export default function YouTubePlayer({
             if (typeof player.loadVideoById === "function") {
               console.log("🎬 Appel loadVideoById avec:", videoIdStr);
 
-              // Attendre un délai supplémentaire pour s'assurer que l'iframe est attaché au DOM
+              // Le player est prêt (on a déjà attendu 1s dans onReady)
+              player.loadVideoById({
+                videoId: videoIdStr,
+                startSeconds: 0,
+                suggestedQuality: "default",
+              });
+              hasLoadedTrack.current = currentTrack.id;
+              setSearchError(false);
+              console.log("✅ Vidéo chargée avec succès");
+
+              // Attendre que la vidéo soit cued avant de lancer
               setTimeout(() => {
                 try {
-                  player.loadVideoById({
-                    videoId: videoIdStr,
-                    startSeconds: 0,
-                    suggestedQuality: "default",
-                  });
-                  hasLoadedTrack.current = currentTrack.id;
-                  setSearchError(false);
-                  console.log("✅ Vidéo chargée avec succès");
-
-                  // Attendre que la vidéo soit cued avant de lancer
-                  setTimeout(() => {
-                    try {
-                      if (player && typeof player.playVideo === "function") {
-                        console.log("▶️ Lancement de la lecture...");
-                        player.playVideo();
-                      }
-                    } catch (e) {
-                      console.warn("⚠️ Erreur playVideo:", e);
-                    }
-                  }, 1000);
+                  if (player && typeof player.playVideo === "function") {
+                    console.log("▶️ Lancement de la lecture...");
+                    player.playVideo();
+                  }
                 } catch (e) {
-                  console.error("❌ Erreur lors du chargement:", e);
-                  setSearchError(true);
+                  console.warn("⚠️ Erreur playVideo:", e);
                 }
-              }, 500); // Délai pour garantir que l'iframe est attaché
+              }, 1500);
             } else {
               console.error("❌ loadVideoById non disponible sur le player");
               setSearchError(true);
