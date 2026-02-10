@@ -69,12 +69,15 @@ export async function searchYouTubeNoAPI(
     }
 
     const data = await response.json();
+    console.log("📦 Réponse API complète:", JSON.stringify(data));
 
     if (data.videoId) {
       console.log(`✅ VideoId trouvé: ${data.videoId}`);
+      console.log(`📏 Type: ${typeof data.videoId}, Longueur: ${data.videoId.length}`);
       return data.videoId;
     }
 
+    console.warn("⚠️ Pas de videoId dans la réponse:", data);
     return null;
   } catch (error: any) {
     console.error("Erreur recherche YouTube (no API):", error);

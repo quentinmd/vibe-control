@@ -103,7 +103,7 @@ export default function YouTubePlayer({
         const ytPlayer = new window.YT.Player(playerIdRef.current, {
           height: "360",
           width: "100%",
-          videoId: undefined, // Pas de vidéo au démarrage
+          // Ne pas inclure videoId lors de la création - on chargera avec loadVideoById après
           playerVars: {
             autoplay: 0,
             controls: 1,
@@ -188,9 +188,11 @@ export default function YouTubePlayer({
         console.log("📡 Recherche YouTube:", searchQuery);
 
         // Rechercher le videoId
+        console.log("🔎 Lancement recherche pour:", searchQuery);
         const videoId = await searchYouTubeNoAPI(searchQuery);
 
         console.log("🔍 VideoId reçu:", videoId, "(type:", typeof videoId, ")");
+        console.log("🔍 VideoId raw:", JSON.stringify(videoId));
 
         if (videoId) {
           // Validation du videoId (doit être une string de 11 caractères)
