@@ -43,11 +43,13 @@ L'API YouTube Data v3 officielle est **plus fiable** que les instances Invidious
 ### 4. Restreindre la Clé (Sécurité)
 
 **Restrictions d'API** :
+
 1. Sélectionnez : **"Restreindre la clé"**
 2. Cochez uniquement : **"YouTube Data API v3"**
 3. Cliquez sur **"ENREGISTRER"**
 
 **Restrictions d'application** (optionnel mais recommandé) :
+
 1. Sélectionnez : **"Référents HTTP"**
 2. Ajoutez :
    ```
@@ -122,6 +124,7 @@ Une recherche = **100 unités**
 → **100 recherches maximum par jour**
 
 **Si vous dépassez** :
+
 - L'API retournera une erreur 403
 - Le système basculera automatiquement sur Invidious (si disponible)
 - Sinon le bouton manuel apparaîtra
@@ -129,6 +132,7 @@ Une recherche = **100 unités**
 ### Pour un Usage Intensif
 
 Si vous avez besoin de plus (événements, soirées multiples) :
+
 - Créez plusieurs projets Google Cloud (chacun a son quota)
 - Ou activez la facturation (toujours gratuit jusqu'à 1 million d'unités/mois)
 
@@ -141,6 +145,7 @@ Si vous avez besoin de plus (événements, soirées multiples) :
 Le fichier `.env.local` est dans `.gitignore` (déjà configuré).
 
 **Si vous avez accidentellement exposé votre clé** :
+
 1. Google Cloud Console → Identifiants
 2. Cliquez sur votre clé → **"SUPPRIMER"**
 3. Créez une nouvelle clé
@@ -160,6 +165,7 @@ Le fichier `.env.local` est dans `.gitignore` (déjà configuré).
 
 **Cause** : La clé n'est pas correctement configurée  
 **Solution** :
+
 1. Vérifiez que vous avez bien activé **YouTube Data API v3**
 2. Attendez 2-3 minutes que la clé soit active
 3. Vérifiez les restrictions (pas trop strictes)
@@ -168,6 +174,7 @@ Le fichier `.env.local` est dans `.gitignore` (déjà configuré).
 
 **Cause** : Quota journalier dépassé (10,000 unités)  
 **Solution** :
+
 1. Attendez minuit (heure PST/PDT - Californie)
 2. Le quota se réinitialise automatiquement
 3. En attendant, le système utilisera le bouton manuel
@@ -175,6 +182,7 @@ Le fichier `.env.local` est dans `.gitignore` (déjà configuré).
 ### La Clé Ne Fonctionne Pas sur Vercel
 
 **Solution** :
+
 1. Vérifiez que la variable est bien nommée : `YOUTUBE_API_KEY` (sans `NEXT_PUBLIC_`)
 2. Vérifiez qu'elle est cochée pour **Production**
 3. Redéployez l'application (menu "Redeploy")
@@ -183,6 +191,7 @@ Le fichier `.env.local` est dans `.gitignore` (déjà configuré).
 ### Comment Savoir si Ça Fonctionne ?
 
 Ouvrez la console (`F12`) et validez un morceau :
+
 - ✅ Vous devriez voir : `🔍 Recherche YouTube officielle...`
 - ✅ Puis : `✅ Trouvé via YouTube API: [videoId]`
 
@@ -193,6 +202,7 @@ Si vous voyez : `⚠️ Pas de clé YouTube API` → La clé n'est pas détecté
 ## 💡 Alternative (Sans Clé API)
 
 Si vous ne voulez pas créer de clé API :
+
 - Le système utilisera automatiquement les instances Invidious (gratuit)
 - Moins fiable (pueden estar caídas)
 - Si elles sont down → Bouton manuel apparaît

@@ -35,6 +35,7 @@ export default function YouTubePlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isAPIReady, setIsAPIReady] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const [searchError, setSearchError] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -84,22 +85,28 @@ export default function YouTubePlayer({
     }
 
     console.log("🎬 Création du lecteur YouTube...");
+    console.log("🎯 Target element ID:", playerIdRef.current);
+    console.log("🎯 Element exists:", document.getElementById(playerIdRef.current));
 
     try {
       const ytPlayer = new window.YT.Player(playerIdRef.current, {
         height: "360",
         width: "100%",
+        videoId: undefined, // Pas de vidéo au démarrage
         playerVars: {
-          autoplay: 0, // Désactivé pour éviter les blocages navigateur
+          autoplay: 0,
           controls: 1,
           modestbranding: 1,
           rel: 0,
           fs: 0,
+          enablejsapi: 1,
         },
         events: {
           onReady: (event: any) => {
             console.log("✅ YouTube Player prêt et opérationnel !");
             setPlayer(event.target);
+            setIsPlayerReady(true);
+            console.log("🔓 Player déverrouillé, prêt à charger des vidéos");
           },
           onStateChange: (event: any) => {
             const states: any = {
@@ -136,10 +143,18 @@ export default function YouTubePlayer({
 
   // Charger une nouvelle vidéo quand le track change
   useEffect(() => {
-    if (!player || !currentTrack) return;
+    if (!player || !currentTrack || !isPlayerReady) {
+      if (!isPlayerReady && currentTrack) {
+        console.log("⏳ En attente que le player soit complètement prêt...");
+      }
+      return;
+    }
 
     // Éviter de recharger le même track
-    if (hasLoadedTrack.current === currentTrack.id) return;
+    if (hasLoadedTrack.current === currentTrack.id) {
+      console.log("ℹ️ Track déjà chargé, skip");
+      return;
+    }
 
     const loadVideo = async () => {
       console.log(
@@ -161,22 +176,39 @@ export default function YouTubePlayer({
 
         if (videoId) {
           console.log("✅ VideoId trouvé:", videoId);
-          console.log("▶️ Chargement et lecture...");
-          player.loadVideoById({
-            videoId: videoId,
-            startSeconds: 0,
-            suggestedQuality: "default",
-          });
-          hasLoadedTrack.current = currentTrack.id;
-          setSearchError(false);
-
-          // Tenter de lancer la lecture automatiquement
-          setTimeout(() => {
-            if (player && player.playVideo) {
-              console.log("▶️ Tentative de lecture automatique...");
-              player.playVideo();
+          console.log("▶️ Chargement de la vidéo...");
+          
+          try {
+            // Vérifier que le player est vraiment prêt
+            if (typeof player.loadVideoById === 'function') {
+              player.loadVideoById({
+                videoId: videoId,
+                startSeconds: 0,
+                suggestedQuality: 'default'
+              });
+              hasLoadedTrack.current = currentTrack.id;
+              setSearchError(false);
+              console.log("✅ Vidéo chargée avec succès");
+              
+              // Attendre que la vidéo soit cued avant de lancer
+              setTimeout(() => {
+                try {
+                  if (player && typeof player.playVideo === 'function') {
+                    console.log("▶️ Lancement de la lecture...");
+                    player.playVideo();
+                  }
+                } catch (e) {
+                  console.warn("⚠️ Erreur playVideo:", e);
+                }
+              }, 1500);
+            } else {
+              console.error("❌ loadVideoById non disponible sur le player");
+              setSearchError(true);
             }
-          }, 1000);
+          } catch (e) {
+            console.error("❌ Erreur lors du chargement:", e);
+            setSearchError(true);
+          }
         } else {
           console.warn("⚠️ VideoId non trouvé pour:", searchQuery);
           // Fallback: essayer avec une recherche simplifiée
@@ -186,19 +218,33 @@ export default function YouTubePlayer({
 
           if (fallbackVideoId) {
             console.log("✅ Fallback réussi:", fallbackVideoId);
-            player.loadVideoById({
-              videoId: fallbackVideoId,
-              startSeconds: 0,
-              suggestedQuality: "default",
-            });
-            hasLoadedTrack.current = currentTrack.id;
-            setSearchError(false);
-
-            setTimeout(() => {
-              if (player && player.playVideo) {
-                player.playVideo();
+            
+            try {
+              if (typeof player.loadVideoById === 'function') {
+                player.loadVideoById({
+                  videoId: fallbackVideoId,
+                  startSeconds: 0,
+                  suggestedQuality: 'default'
+                });
+                hasLoadedTrack.current = currentTrack.id;
+                setSearchError(false);
+                
+                setTimeout(() => {
+                  try {
+                    if (player && typeof player.playVideo === 'function') {
+                      player.playVideo();
+                    }
+                  } catch (e) {
+                    console.warn("⚠️ Erreur playVideo (fallback):", e);
+                  }
+                }, 1500);
+              } else {
+                setSearchError(true);
               }
-            }, 1000);
+            } catch (e) {
+              console.error("❌ Erreur fallback:", e);
+              setSearchError(true);
+            }
           } else {
             console.error("❌ Aucun videoId trouvé après fallback");
             setSearchError(true);
@@ -213,7 +259,7 @@ export default function YouTubePlayer({
     };
 
     loadVideo();
-  }, [currentTrack, player]);
+  }, [currentTrack, player, isPlayerReady]);
 
   const handleTrackEnd = () => {
     if (currentTrack) {
