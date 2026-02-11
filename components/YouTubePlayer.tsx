@@ -212,6 +212,14 @@ export default function YouTubePlayer({
     };
   }, [isAPIReady, player, currentTrack]);
 
+  // Réinitialiser hasLoadedTrack quand currentTrack devient null
+  useEffect(() => {
+    if (!currentTrack && hasLoadedTrack.current) {
+      console.log("🔄 Track supprimé, réinitialisation de hasLoadedTrack");
+      hasLoadedTrack.current = null;
+    }
+  }, [currentTrack]);
+
   // Charger une nouvelle vidéo quand le track change
   useEffect(() => {
     if (!player || !currentTrack || !isPlayerReady) {
@@ -223,9 +231,21 @@ export default function YouTubePlayer({
 
     // Éviter de recharger le même track
     if (hasLoadedTrack.current === currentTrack.id) {
-      console.log("ℹ️ Track déjà chargé, skip");
+      console.log(
+        "ℹ️ Track déjà chargé, skip - ID:",
+        currentTrack.id,
+        "Titre:",
+        currentTrack.title,
+      );
       return;
     }
+
+    console.log(
+      "🆕 Nouveau track détecté - ID:",
+      currentTrack.id,
+      "Ancien ID:",
+      hasLoadedTrack.current,
+    );
 
     const loadVideo = async () => {
       console.log(
@@ -412,6 +432,13 @@ export default function YouTubePlayer({
 
   const handleTrackEnd = () => {
     if (currentTrack) {
+      console.log(
+        "🎬 handleTrackEnd appelé pour:",
+        currentTrack.id,
+        currentTrack.title,
+      );
+      // Réinitialiser hasLoadedTrack pour permettre le chargement du prochain track
+      hasLoadedTrack.current = null;
       onTrackEnd(currentTrack.id);
     }
   };
