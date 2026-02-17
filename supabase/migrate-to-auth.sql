@@ -12,7 +12,7 @@
 -- =============================================
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE,
   full_name TEXT,
   avatar_url TEXT,
   subscription_tier TEXT NOT NULL DEFAULT 'free' CHECK (subscription_tier IN ('free', 'premium', 'pro')),
@@ -69,14 +69,25 @@ USING (auth.uid() = user_id);
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Ne rien faire si l'email est NULL (ne devrait pas arriver)
+  IF NEW.email IS NULL THEN
+    RETURN NEW;
+  END IF;
+  
   INSERT INTO profiles (id, email, full_name)
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name')
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', '')
   )
   ON CONFLICT (id) DO NOTHING;
+  
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Log l'erreur mais ne bloque pas la création de l'utilisateur
+    RAISE WARNING 'Erreur lors de la création du profil: %', SQLERRM;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
