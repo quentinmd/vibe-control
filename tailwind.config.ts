@@ -39,11 +39,6 @@ const config: Config = {
           500: "#8b5cf6",
           600: "#7c3aed",
         },
-        // Keep legacy colors for backward compatibility (host/guest pages)
-        "neon-violet": "#9D4EDD",
-        "neon-cyan": "#00D9FF",
-        "dark-bg": "#0A0A0F",
-        "dark-card": "#1A1A24",
       },
       animation: {
         "fade-in": "fade-in 0.5s ease-out",

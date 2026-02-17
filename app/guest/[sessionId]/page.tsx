@@ -48,24 +48,24 @@ export default function GuestPage({ params }: PageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-neon-violet animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
+        <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
       </div>
     );
   }
 
   if (error || !session) {
     return (
-      <main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-br from-dark-bg via-dark-bg to-purple-950">
-        <div className="max-w-md w-full bg-dark-card rounded-xl p-8 border border-red-500/30 text-center">
+      <main className="min-h-screen px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10 flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
+        <div className="max-w-md w-full bg-white rounded-xl p-6 sm:p-8 border border-red-200 text-center shadow-lg">
           <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
-          <h1 className="text-2xl font-bold mb-2 text-red-400">
+          <h1 className="text-2xl font-bold mb-2 text-red-600">
             Session Introuvable
           </h1>
-          <p className="text-gray-400 mb-6">
+          <p className="text-gray-600 mb-6">
             {error || "Cette session n'existe pas ou a été terminée."}
           </p>
-          <a href="/" className="btn-neon btn-neon-primary inline-block">
+          <a href="/" className="btn-primary inline-block">
             Retour à l'accueil
           </a>
         </div>
@@ -74,17 +74,19 @@ export default function GuestPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen p-4 lg:p-6 bg-gradient-to-br from-dark-bg via-dark-bg to-purple-950">
-      <div className="max-w-3xl mx-auto">
+    <main className="min-h-screen px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10 bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      <div className="max-w-4xl xl:max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <PartyPopper className="w-12 h-12 text-neon-violet animate-pulse" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-neon-violet to-neon-cyan bg-clip-text text-transparent">
+            <PartyPopper className="w-10 h-10 sm:w-12 sm:h-12 text-accent-600 animate-pulse" />
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary-600 via-accent-600 to-primary-700 bg-clip-text text-transparent">
               {session.name}
             </h1>
           </div>
-          <p className="text-gray-300">Suggérez vos morceaux préférés !</p>
+          <p className="text-gray-600 text-sm sm:text-base">
+            Suggérez vos morceaux préférés !
+          </p>
         </div>
 
         {/* Composant de suggestion */}
@@ -94,7 +96,7 @@ export default function GuestPage({ params }: PageProps) {
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
             Propulsé par{" "}
-            <span className="text-neon-violet font-semibold">Vibe Control</span>
+            <span className="text-primary-600 font-semibold">Vibe Control</span>
           </p>
         </div>
       </div>

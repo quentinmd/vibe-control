@@ -83,7 +83,7 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
   return (
     <div className="space-y-6">
       {/* Barre de recherche */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -92,13 +92,13 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Rechercher un titre, un artiste..."
-            className="w-full bg-dark-bg pl-10 pr-4 py-3 rounded-lg border border-neon-violet/30 focus:outline-none focus:border-neon-violet text-white placeholder-gray-500"
+            className="w-full bg-white pl-10 pr-4 py-2 sm:py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-all"
           />
         </div>
         <button
           onClick={handleSearch}
           disabled={isSearching || !searchQuery.trim()}
-          className="btn-neon btn-neon-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-primary px-4 sm:px-6 md:px-8 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSearching ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -110,41 +110,41 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
 
       {/* Message d'erreur */}
       {error && (
-        <div className="bg-red-600/20 border border-red-600 rounded-lg p-4 text-center">
-          <p className="text-red-400">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center shadow-sm">
+          <p className="text-red-600">{error}</p>
         </div>
       )}
 
       {/* Résultats de recherche */}
       {searchResults.length > 0 && !error && (
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-300">
+          <h3 className="text-lg font-semibold text-gray-900">
             {searchResults.length} résultat{searchResults.length > 1 ? "s" : ""}
           </h3>
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             {searchResults.map((track, index) => (
               <div
                 key={index}
-                className="bg-dark-bg rounded-lg p-4 border border-neon-violet/20 hover:border-neon-violet/50 transition-all"
+                className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   {track.thumbnail ? (
                     <img
                       src={track.thumbnail}
                       alt={track.title}
-                      className="w-16 h-16 rounded object-cover"
+                      className="w-16 h-16 rounded object-cover shadow-sm"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded bg-neon-violet/20 flex items-center justify-center">
-                      <Music className="w-6 h-6 text-neon-violet" />
+                    <div className="w-16 h-16 rounded bg-primary-100 flex items-center justify-center">
+                      <Music className="w-6 h-6 text-primary-600" />
                     </div>
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-white truncate">
+                    <h4 className="font-semibold text-gray-900 truncate">
                       {track.title}
                     </h4>
-                    <p className="text-sm text-gray-400 truncate">
+                    <p className="text-sm text-gray-600 truncate">
                       {track.artist}
                     </p>
                   </div>
@@ -157,7 +157,7 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
                         cover_url: track.thumbnail,
                       })
                     }
-                    className="btn-neon btn-neon-secondary px-4 py-2 text-sm whitespace-nowrap"
+                    className="btn-secondary px-4 sm:px-6 py-2 sm:py-3 text-sm whitespace-nowrap"
                   >
                     Suggérer
                   </button>
@@ -170,10 +170,10 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
 
       {/* État initial */}
       {searchResults.length === 0 && searchQuery === "" && (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-gray-500">
           <Search className="w-16 h-16 mx-auto mb-4 opacity-30" />
           <p>Recherchez un morceau pour commencer</p>
-          <p className="text-xs text-gray-500 mt-2">Propulsé par YouTube</p>
+          <p className="text-xs text-gray-400 mt-2">Propulsé par YouTube</p>
         </div>
       )}
 
@@ -182,10 +182,10 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
         searchQuery !== "" &&
         !isSearching &&
         !error && (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-gray-500">
             <Music className="w-16 h-16 mx-auto mb-4 opacity-30" />
             <p>Aucun résultat trouvé pour "{searchQuery}"</p>
-            <p className="text-sm mt-2 text-gray-500">
+            <p className="text-sm mt-2 text-gray-400">
               Essayez un autre terme de recherche
             </p>
           </div>

@@ -72,11 +72,11 @@ export default function GuestSubmission({ sessionId }: GuestSubmissionProps) {
     <div className="space-y-6">
       {/* Message de succès */}
       {showSuccess && (
-        <div className="bg-green-600/20 border border-green-600 rounded-lg p-4 flex items-center gap-3 animate-slide-in">
-          <Check className="w-6 h-6 text-green-400 flex-shrink-0" />
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-slide-in shadow-md">
+          <Check className="w-6 h-6 text-green-600 flex-shrink-0" />
           <div>
-            <p className="font-semibold text-green-400">Suggestion envoyée !</p>
-            <p className="text-sm text-gray-300">
+            <p className="font-semibold text-green-700">Suggestion envoyée !</p>
+            <p className="text-sm text-green-600">
               L'hôte va examiner votre suggestion
             </p>
           </div>
@@ -84,8 +84,8 @@ export default function GuestSubmission({ sessionId }: GuestSubmissionProps) {
       )}
 
       {/* Input nom */}
-      <div className="bg-dark-card rounded-lg p-4 border border-neon-cyan/30">
-        <label className="block text-sm font-medium mb-2 text-gray-300">
+      <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 border border-gray-200 shadow-lg">
+        <label className="block text-sm font-medium mb-2 text-gray-700">
           Votre prénom/pseudo
         </label>
         <input
@@ -93,14 +93,14 @@ export default function GuestSubmission({ sessionId }: GuestSubmissionProps) {
           value={guestName}
           onChange={(e) => setGuestName(e.target.value)}
           placeholder="Ex: Thomas"
-          className="w-full bg-dark-bg px-4 py-2 rounded-lg border border-neon-violet/30 focus:outline-none focus:border-neon-violet text-white placeholder-gray-500"
+          className="w-full bg-white px-4 py-2 sm:py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-all"
         />
       </div>
 
       {/* Recherche musicale */}
-      <div className="bg-dark-card rounded-lg p-6 border border-neon-violet/30">
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <Music className="w-6 h-6 text-neon-violet" />
+      <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 lg:p-8 border border-gray-200 shadow-lg">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2 text-gray-900">
+          <Music className="w-6 h-6 text-primary-600" />
           Suggérer un morceau
         </h2>
         <MusicSearch onSelectTrack={handleSubmitSuggestion} />
@@ -108,22 +108,22 @@ export default function GuestSubmission({ sessionId }: GuestSubmissionProps) {
 
       {/* Historique des suggestions */}
       {submittedTracks.length > 0 && (
-        <div className="bg-dark-card rounded-lg p-4 border border-neon-cyan/30">
-          <h3 className="text-lg font-semibold mb-3 text-neon-cyan">
+        <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 border border-gray-200 shadow-lg">
+          <h3 className="text-lg font-semibold mb-3 text-primary-600">
             Vos suggestions ({submittedTracks.length})
           </h3>
           <ul className="space-y-2">
             {submittedTracks.map((title, index) => (
               <li
                 key={index}
-                className="flex items-center gap-2 text-sm text-gray-300"
+                className="flex items-center gap-2 text-sm text-gray-700"
               >
-                <Check className="w-4 h-4 text-green-400" />
+                <Check className="w-4 h-4 text-green-600" />
                 {title}
               </li>
             ))}
           </ul>
-          <p className="text-xs text-gray-400 mt-3">
+          <p className="text-xs text-gray-500 mt-3">
             ✅ En attente de validation par l'hôte
           </p>
         </div>
@@ -132,9 +132,9 @@ export default function GuestSubmission({ sessionId }: GuestSubmissionProps) {
       {/* Loader */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-dark-card rounded-lg p-6 flex items-center gap-3">
-            <Loader2 className="w-6 h-6 text-neon-violet animate-spin" />
-            <p>Envoi en cours...</p>
+          <div className="bg-white rounded-xl p-6 flex items-center gap-3 shadow-2xl">
+            <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
+            <p className="text-gray-900">Envoi en cours...</p>
           </div>
         </div>
       )}
