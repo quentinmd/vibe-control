@@ -131,11 +131,36 @@ export default function HostPage() {
     router.push("/");
   };
 
+  // Timeout automatique pour éviter le loading infini
+  useEffect(() => {
+    if (authLoading || isLoading) {
+      const timeout = setTimeout(() => {
+        console.warn("⚠️ Loading timeout dépassé, forcer l'arrêt");
+        setIsLoading(false);
+      }, 5000); // 5 secondes max
+
+      return () => clearTimeout(timeout);
+    }
+  }, [authLoading, isLoading]);
+
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
-        <p className="text-sm text-gray-500 mt-4">Chargement...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
+        <p className="text-gray-600 mb-2">Chargement...</p>
+        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
+          Si cette page reste bloquée, utilisez le bouton ci-dessous
+        </p>
+        <button
+          onClick={async () => {
+            await signOut();
+            window.location.href = "/login";
+          }}
+          className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Se déconnecter
+        </button>
       </div>
     );
   }

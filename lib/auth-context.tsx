@@ -53,11 +53,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoadingProfile(true);
 
     try {
-      const { data, error } = await supabase
+      // Timeout de 3 secondes par requête
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Profile loading timeout")), 3000),
+      );
+
+      const profilePromise = supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
+
+      const { data, error } = (await Promise.race([
+        profilePromise,
+        timeoutPromise,
+      ])) as any;
 
       if (error) {
         // Si le profil n'existe pas (PGRST116 = no rows)
@@ -86,10 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      console.log("Profile loaded successfully:", data);
       setProfile(data);
       setLoadingProfile(false);
-    } catch (error) {
-      console.error("Error loading profile:", error);
+    } catch (error: any) {
+      if (error?.message === "Profile loading timeout") {
+        console.error("⏱️ Timeout lors du chargement du profil");
+      } else {
+        console.error("Error loading profile:", error);
+      }
       setProfile(null);
       setLoadingProfile(false);
     }
