@@ -177,7 +177,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-neon-violet border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
       </div>
     );
   }
@@ -194,20 +194,20 @@ export default function HostDashboard({ session }: HostDashboardProps) {
       {/* GRILLE 2 COLONNES */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* COLONNE 1: EN ATTENTE */}
-        <div className="bg-dark-card rounded-xl p-6 border border-neon-violet/30">
+        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Clock className="w-6 h-6 text-neon-cyan" />
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Clock className="w-6 h-6 text-accent-600" />
               En Attente
             </h2>
-            <span className="px-3 py-1 bg-neon-cyan/20 text-neon-cyan rounded-full text-sm font-semibold">
+            <span className="px-3 py-1 bg-accent-100 text-accent-700 rounded-full text-sm font-semibold border border-accent-200">
               {pendingTracks.length}
             </span>
           </div>
 
           <div className="space-y-3 max-h-[70vh] overflow-y-auto">
             {pendingTracks.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
+              <div className="text-center text-gray-400 py-12 bg-gray-50 rounded-lg">
                 <Music className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>Aucune suggestion en attente</p>
               </div>
@@ -215,7 +215,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
               pendingTracks.map((track) => (
                 <div
                   key={track.id}
-                  className="bg-dark-bg rounded-lg p-4 border border-neon-violet/20 animate-slide-in hover:border-neon-violet/50 transition-all"
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 animate-slide-in hover:bg-white hover:shadow-md hover:border-accent-300 transition-all duration-200"
                 >
                   <div className="flex items-start gap-3">
                     {track.cover_url ? (
@@ -225,20 +225,20 @@ export default function HostDashboard({ session }: HostDashboardProps) {
                         className="w-16 h-16 rounded object-cover"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded bg-neon-violet/20 flex items-center justify-center">
-                        <Music className="w-6 h-6 text-neon-violet" />
+                      <div className="w-16 h-16 rounded bg-accent-100 flex items-center justify-center">
+                        <Music className="w-6 h-6 text-accent-600" />
                       </div>
                     )}
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white truncate">
+                      <h3 className="font-semibold text-gray-900 truncate">
                         {track.title}
                       </h3>
-                      <p className="text-sm text-gray-400 truncate">
+                      <p className="text-sm text-gray-600 truncate">
                         {track.artist}
                       </p>
                       {track.suggested_by && (
-                        <p className="text-xs text-neon-cyan mt-1">
+                        <p className="text-xs text-primary-600 mt-1">
                           Par {track.suggested_by}
                         </p>
                       )}
@@ -248,14 +248,14 @@ export default function HostDashboard({ session }: HostDashboardProps) {
                   <div className="flex gap-2 mt-4">
                     <button
                       onClick={() => handleApprove(track.id)}
-                      className="flex-1 btn-neon bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-2 rounded-lg font-semibold bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       <Check className="w-4 h-4" />
                       Valider
                     </button>
                     <button
                       onClick={() => handleReject(track.id)}
-                      className="flex-1 btn-neon bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-2 rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       <X className="w-4 h-4" />
                       Refuser
@@ -268,20 +268,20 @@ export default function HostDashboard({ session }: HostDashboardProps) {
         </div>
 
         {/* COLONNE 2: PLAYLIST ACTIVE */}
-        <div className="bg-dark-card rounded-xl p-6 border border-neon-cyan/30">
+        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <PartyPopper className="w-6 h-6 text-neon-violet" />
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <PartyPopper className="w-6 h-6 text-primary-600" />
               Playlist Active
             </h2>
-            <span className="px-3 py-1 bg-neon-violet/20 text-neon-violet rounded-full text-sm font-semibold">
+            <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold border border-primary-200">
               {approvedTracks.length}
             </span>
           </div>
 
           <div className="space-y-3 max-h-[70vh] overflow-y-auto">
             {approvedTracks.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
+              <div className="text-center text-gray-400 py-12 bg-gray-50 rounded-lg">
                 <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>Validez des suggestions pour commencer</p>
               </div>
@@ -289,10 +289,10 @@ export default function HostDashboard({ session }: HostDashboardProps) {
               approvedTracks.map((track, index) => (
                 <div
                   key={track.id}
-                  className="bg-dark-bg rounded-lg p-4 border border-neon-cyan/20 animate-slide-in hover:border-neon-cyan/50 transition-all"
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 animate-slide-in hover:bg-white hover:shadow-md hover:border-primary-300 transition-all duration-200"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-neon-violet flex items-center justify-center font-bold text-sm">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center font-bold text-sm text-white shadow-sm">
                       {index + 1}
                     </span>
 
@@ -303,20 +303,20 @@ export default function HostDashboard({ session }: HostDashboardProps) {
                         className="w-16 h-16 rounded object-cover"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded bg-neon-cyan/20 flex items-center justify-center">
-                        <Music className="w-6 h-6 text-neon-cyan" />
+                      <div className="w-16 h-16 rounded bg-primary-100 flex items-center justify-center">
+                        <Music className="w-6 h-6 text-primary-600" />
                       </div>
                     )}
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white truncate">
+                      <h3 className="font-semibold text-gray-900 truncate">
                         {track.title}
                       </h3>
-                      <p className="text-sm text-gray-400 truncate">
+                      <p className="text-sm text-gray-600 truncate">
                         {track.artist}
                       </p>
                       {track.suggested_by && (
-                        <p className="text-xs text-neon-violet mt-1">
+                        <p className="text-xs text-primary-600 mt-1">
                           Suggéré par {track.suggested_by}
                         </p>
                       )}

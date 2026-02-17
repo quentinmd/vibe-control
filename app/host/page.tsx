@@ -120,37 +120,39 @@ export default function HostPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-neon-violet animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
       </div>
     );
   }
 
   if (!session) {
     return (
-      <main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-br from-dark-bg via-dark-bg to-purple-950">
+      <main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
         <div className="max-w-md w-full">
           {/* Back to home link */}
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-violet transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Retour à l'accueil
           </Link>
 
-          <div className="bg-dark-card rounded-xl p-8 border border-neon-violet/30">
+          <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
             <div className="text-center mb-8">
-              <Music className="w-16 h-16 mx-auto mb-4 text-neon-violet" />
-              <h1 className="text-3xl font-bold mb-2">Créer une Session</h1>
-              <p className="text-gray-400">
+              <Music className="w-16 h-16 mx-auto mb-4 text-primary-600" />
+              <h1 className="text-3xl font-bold mb-2 text-gray-900">
+                Créer une Session
+              </h1>
+              <p className="text-gray-600">
                 Commencez votre soirée Vibe Control
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">
+                <label className="block text-sm font-medium mb-2 text-gray-700">
                   Nom de la session
                 </label>
                 <input
@@ -158,7 +160,7 @@ export default function HostPage() {
                   value={sessionName}
                   onChange={(e) => setSessionName(e.target.value)}
                   placeholder="Ex: Soirée du Vendredi"
-                  className="w-full bg-dark-bg px-4 py-3 rounded-lg border border-neon-violet/30 focus:outline-none focus:border-neon-violet text-white placeholder-gray-500"
+                  className="w-full bg-white px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 text-gray-900 placeholder-gray-400 transition-all"
                   onKeyDown={(e) => e.key === "Enter" && handleCreateSession()}
                 />
               </div>
@@ -166,7 +168,7 @@ export default function HostPage() {
               <button
                 onClick={handleCreateSession}
                 disabled={!sessionName.trim() || isCreating}
-                className="w-full btn-neon btn-neon-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreating ? (
                   <>
@@ -188,7 +190,7 @@ export default function HostPage() {
   }
 
   return (
-    <main className="min-h-screen p-4 lg:p-6 bg-gradient-to-br from-dark-bg via-dark-bg to-purple-950">
+    <main className="min-h-screen p-4 lg:p-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <SessionHeader
           sessionId={session.id}

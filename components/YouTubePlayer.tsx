@@ -483,10 +483,10 @@ export default function YouTubePlayer({
 
   if (!currentTrack) {
     return (
-      <div className="bg-dark-card rounded-xl p-6 border border-neon-violet/30">
-        <div className="text-center py-8 text-gray-400">
+      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+        <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-lg">
           <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Aucun morceau en lecture</p>
+          <p className="text-gray-600">Aucun morceau en lecture</p>
           <p className="text-sm mt-2">Validez des suggestions pour commencer</p>
         </div>
       </div>
@@ -494,49 +494,49 @@ export default function YouTubePlayer({
   }
 
   return (
-    <div className="bg-dark-card rounded-xl p-6 border border-neon-violet/30 space-y-4">
+    <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 space-y-4">
       {/* Info du morceau en cours */}
       <div className="flex items-start gap-4">
         {currentTrack.cover_url ? (
           <img
             src={currentTrack.cover_url}
             alt={currentTrack.title}
-            className="w-20 h-20 rounded object-cover"
+            className="w-20 h-20 rounded object-cover shadow-sm"
           />
         ) : (
-          <div className="w-20 h-20 rounded bg-neon-violet/20 flex items-center justify-center">
-            <Play className="w-8 h-8 text-neon-violet" />
+          <div className="w-20 h-20 rounded bg-primary-100 flex items-center justify-center shadow-sm">
+            <Play className="w-8 h-8 text-primary-600" />
           </div>
         )}
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-white truncate">
+          <h3 className="text-lg font-semibold text-gray-900 truncate">
             {currentTrack.title}
           </h3>
-          <p className="text-sm text-gray-400 truncate">
+          <p className="text-sm text-gray-600 truncate">
             {currentTrack.artist}
           </p>
           {currentTrack.suggested_by && (
-            <p className="text-xs text-neon-cyan mt-1">
+            <p className="text-xs text-primary-600 mt-1">
               Suggéré par {currentTrack.suggested_by}
             </p>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="px-3 py-1 rounded-full bg-neon-violet/20 text-neon-violet text-xs font-semibold">
+          <div className="px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold border border-primary-300">
             En cours
           </div>
         </div>
       </div>
 
       {/* Lecteur YouTube intégré */}
-      <div className="relative bg-black rounded-lg overflow-hidden">
+      <div className="relative bg-black rounded-lg overflow-hidden shadow-inner">
         {isLoadingVideo && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-neon-violet border-t-transparent mx-auto mb-3"></div>
-              <p className="text-sm text-gray-400">Recherche de la vidéo...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent mx-auto mb-3"></div>
+              <p className="text-sm text-gray-300">Recherche de la vidéo...</p>
             </div>
           </div>
         )}
@@ -545,8 +545,8 @@ export default function YouTubePlayer({
 
       {/* Message d'état */}
       {!isAPIReady && (
-        <div className="bg-dark-bg rounded-lg p-4 border border-neon-cyan/20">
-          <p className="text-sm text-gray-400 text-center">
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <p className="text-sm text-gray-600 text-center">
             ⏳ Chargement du lecteur YouTube...
           </p>
         </div>
@@ -554,16 +554,16 @@ export default function YouTubePlayer({
 
       {/* Info de debug */}
       {isAPIReady && !player && (
-        <div className="bg-yellow-900/20 rounded-lg p-4 border border-yellow-500/30">
-          <p className="text-sm text-yellow-300 text-center">
+        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+          <p className="text-sm text-yellow-700 text-center">
             ⚙️ Lecteur YouTube en cours d'initialisation...
           </p>
         </div>
       )}
 
       {isAPIReady && player && !isLoadingVideo && !searchError && (
-        <div className="bg-green-900/20 rounded-lg p-3 border border-green-500/30">
-          <p className="text-xs text-green-300 text-center">
+        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+          <p className="text-xs text-green-700 text-center">
             ✅ Lecteur prêt • Ouvrez la console pour voir les logs
           </p>
         </div>
@@ -571,20 +571,20 @@ export default function YouTubePlayer({
 
       {/* Message d'erreur avec bouton manuel */}
       {searchError && (
-        <div className="bg-red-900/20 rounded-lg p-4 border border-red-500/30">
+        <div className="bg-red-50 rounded-lg p-4 border border-red-200">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-red-300 font-semibold mb-2">
+              <p className="text-sm text-red-700 font-semibold mb-2">
                 Impossible de trouver la vidéo automatiquement
               </p>
-              <p className="text-xs text-red-400/80 mb-3">
+              <p className="text-xs text-red-600 mb-3">
                 Les serveurs de recherche sont temporairement indisponibles.
                 Utilisez le bouton ci-dessous pour lancer manuellement.
               </p>
               <button
                 onClick={openInYouTube}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-semibold"
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm font-semibold"
               >
                 <ExternalLink className="w-4 h-4" />
                 Ouvrir sur YouTube
@@ -598,7 +598,7 @@ export default function YouTubePlayer({
       <div className="flex items-center justify-center gap-4">
         <button
           onClick={toggleMute}
-          className="p-3 rounded-full bg-dark-bg hover:bg-neon-violet/20 transition-colors"
+          className="p-3 rounded-full bg-secondary-100 hover:bg-secondary-200 transition-all duration-200 text-secondary-700 disabled:opacity-50"
           disabled={!player}
         >
           {isMuted ? (
@@ -610,7 +610,7 @@ export default function YouTubePlayer({
 
         <button
           onClick={togglePlay}
-          className="p-4 rounded-full bg-neon-violet neon-glow-violet hover:bg-opacity-90 transition-all transform hover:scale-105 disabled:opacity-50"
+          className="p-4 rounded-full bg-primary-600 hover:bg-primary-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 text-white"
           disabled={!player}
         >
           {isPlaying ? (
@@ -622,7 +622,7 @@ export default function YouTubePlayer({
 
         <button
           onClick={skipTrack}
-          className="p-3 rounded-full bg-dark-bg hover:bg-neon-violet/20 transition-colors"
+          className="p-3 rounded-full bg-secondary-100 hover:bg-secondary-200 transition-all duration-200 text-secondary-700 disabled:opacity-50"
           disabled={!player || playlist.length <= 1}
         >
           <SkipForward className="w-5 h-5" />
@@ -630,24 +630,26 @@ export default function YouTubePlayer({
       </div>
 
       {/* File d'attente */}
-      <div className="pt-4 border-t border-neon-violet/20">
-        <h4 className="text-sm font-semibold text-gray-400 mb-2">
+      <div className="pt-4 border-t border-gray-200">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">
           À venir ({playlist.length - 1})
         </h4>
         <div className="space-y-2 max-h-32 overflow-y-auto">
           {playlist.slice(1, 4).map((track, index) => (
             <div
               key={track.id}
-              className="flex items-center gap-2 text-sm text-gray-500"
+              className="flex items-center gap-2 text-sm text-gray-600 p-2 rounded hover:bg-gray-50 transition-colors border-l-4 border-primary-400"
             >
-              <span className="w-6 text-center">{index + 2}.</span>
-              <span className="truncate">{track.title}</span>
-              <span className="text-gray-600">-</span>
-              <span className="truncate">{track.artist}</span>
+              <span className="w-6 text-center font-semibold text-primary-600">
+                {index + 2}.
+              </span>
+              <span className="truncate font-medium">{track.title}</span>
+              <span className="text-gray-400">-</span>
+              <span className="truncate text-gray-500">{track.artist}</span>
             </div>
           ))}
           {playlist.length > 4 && (
-            <p className="text-xs text-gray-600 text-center">
+            <p className="text-xs text-gray-500 text-center py-2">
               + {playlist.length - 4} autre(s)
             </p>
           )}

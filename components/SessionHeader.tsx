@@ -31,19 +31,19 @@ export default function SessionHeader({
   };
 
   return (
-    <div className="bg-dark-card rounded-xl p-6 mb-6 border border-neon-violet/30">
+    <div className="bg-white rounded-xl p-6 mb-6 shadow-md border border-gray-200">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         {/* Info Session */}
         <div className="flex-1">
-          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-neon-violet to-neon-cyan bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
             {sessionName}
           </h1>
-          <p className="text-gray-400 text-sm mb-4">
-            Session ID:{" "}
-            <span className="text-neon-cyan font-mono">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <span className="text-sm text-gray-600">Session ID:</span>
+            <span className="text-sm font-mono px-3 py-1 bg-primary-50 text-primary-700 rounded-md border border-primary-200">
               {sessionId.slice(0, 8)}...
             </span>
-          </p>
+          </div>
 
           {/* Lien invité */}
           <div className="flex items-center gap-2 mt-4">
@@ -51,11 +51,11 @@ export default function SessionHeader({
               type="text"
               value={guestUrl}
               readOnly
-              className="flex-1 bg-dark-bg px-4 py-2 rounded-lg border border-neon-violet/30 text-sm font-mono focus:outline-none focus:border-neon-violet"
+              className="flex-1 bg-gray-50 px-4 py-2 rounded-lg border border-gray-300 text-sm font-mono text-gray-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
             />
             <button
               onClick={copyToClipboard}
-              className="btn-neon btn-neon-primary flex items-center gap-2"
+              className="px-4 py-2 rounded-lg font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200 flex items-center gap-2 border border-primary-300"
             >
               {copied ? (
                 <>
@@ -70,18 +70,25 @@ export default function SessionHeader({
               )}
             </button>
           </div>
+
+          {copied && (
+            <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+              <Check className="w-4 h-4" />
+              Lien copié dans le presse-papier
+            </p>
+          )}
         </div>
 
         {/* QR Code */}
         {showQR && (
-          <div className="bg-white p-4 rounded-xl">
+          <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
             <QRCodeSVG
               value={guestUrl}
               size={180}
               level="H"
               includeMargin={true}
             />
-            <p className="text-center text-dark-bg text-xs mt-2 font-semibold">
+            <p className="text-center text-gray-700 text-xs mt-2 font-semibold">
               Scannez pour suggérer
             </p>
           </div>
@@ -89,7 +96,7 @@ export default function SessionHeader({
 
         <button
           onClick={() => setShowQR(!showQR)}
-          className="lg:hidden btn-neon bg-dark-bg border border-neon-violet/30 flex items-center gap-2"
+          className="lg:hidden px-4 py-2 rounded-lg font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
         >
           <QrCodeIcon className="w-4 h-4" />
           {showQR ? "Masquer" : "Afficher"} QR
@@ -97,10 +104,10 @@ export default function SessionHeader({
       </div>
 
       {/* Bouton terminer session */}
-      <div className="mt-6 pt-6 border-t border-neon-violet/20">
+      <div className="mt-6 pt-6 border-t border-gray-200">
         <button
           onClick={onEndSession}
-          className="btn-neon bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+          className="px-6 py-3 rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
         >
           <LogOut className="w-4 h-4" />
           Terminer la session
