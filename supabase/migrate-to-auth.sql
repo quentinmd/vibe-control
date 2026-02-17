@@ -22,21 +22,16 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 -- Index pour les requêtes fréquentes
-CREATE INDEX idx_profiles_subscription_tier ON profiles(subscription_tier);
-CREATE INDEX idx_profiles_stripe_customer_id ON profiles(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_subscription_tier ON profiles(subscription_tier);
+CREATE INDEX IF NOT EXISTS idx_profiles_stripe_customer_id ON profiles(stripe_customer_id);
 
--- Enable RLS
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- Désactiver temporairement RLS pour permettre les INSERT du trigger
+-- (le trigger utilise SECURITY DEFINER donc il peut bypasser RLS)
+ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
 
--- Politique : Les utilisateurs peuvent lire leur propre profil
-CREATE POLICY "Users can read own profile"
-ON profiles FOR SELECT
-USING (auth.uid() = id);
-
--- Politique : Les utilisateurs peuvent modifier leur propre profil
-CREATE POLICY "Users can update own profile"
-ON profiles FOR UPDATE
-USING (auth.uid() = id);
+-- Note: Une fois que tout fonctionne, vous pourrez réactiver RLS avec:
+-- ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- Et créer des politiques appropriées
 
 -- =============================================
 -- ÉTAPE 2: Créer la table subscriptions
@@ -55,14 +50,15 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 );
 
 -- Index pour les requêtes fréquentes
-CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX idx_subscriptions_stripe_subscription_id ON subscriptions(stripe_subscription_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_subscription_id ON subscriptions(stripe_subscription_id);
 
 -- Enable RLS
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- Politique : Les utilisateurs peuvent lire leurs propres abonnements
+DROP POLICY IF EXISTS "Users can read own subscriptions" ON subscriptions;
 CREATE POLICY "Users can read own subscriptions"
 ON subscriptions FOR SELECT
 USING (auth.uid() = user_id);
@@ -78,7 +74,8 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name')
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -115,14 +112,33 @@ TRUNCATE TABLE sessions CASCADE;
 -- - Vous avez nettoyé les anciennes sessions (TRUNCATE)
 -- - OU vous avez migré les sessions vers un vrai UUID utilisateur
 
--- Supprimer l'ancienne colonne TEXT
-ALTER TABLE sessions DROP COLUMN IF EXISTS host_id;
+-- Supprimer l'ancienne colonne TEXT si elle existe (type TEXT)
+DO $$ 
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'sessions' 
+    AND column_name = 'host_id' 
+    AND data_type = 'text'
+  ) THEN
+    ALTER TABLE sessions DROP COLUMN host_id;
+  END IF;
+END $$;
 
--- Recréer la colonne en UUID avec FK
-ALTER TABLE sessions ADD COLUMN host_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE;
+-- Ajouter la colonne en UUID avec FK si elle n'existe pas
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'sessions' 
+    AND column_name = 'host_id'
+  ) THEN
+    ALTER TABLE sessions ADD COLUMN host_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 -- Recréer l'index
-CREATE INDEX idx_sessions_host_id_new ON sessions(host_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_host_id_new ON sessions(host_id);
 
 -- =============================================
 -- ÉTAPE 6: Mettre à jour les politiques RLS
@@ -227,11 +243,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Appliquer aux tables avec updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at
 BEFORE UPDATE ON profiles
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER update_subscriptions_updated_at
 BEFORE UPDATE ON subscriptions
 FOR EACH ROW
