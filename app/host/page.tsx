@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase, Session } from "@/lib/supabase";
 import HostDashboard from "@/components/HostDashboard";
 import SessionHeader from "@/components/SessionHeader";
-import { Music, Plus, Loader2 } from "lucide-react";
+import { Music, Plus, Loader2, ArrowLeft } from "lucide-react";
 
 export default function HostPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -128,45 +129,58 @@ export default function HostPage() {
   if (!session) {
     return (
       <main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-br from-dark-bg via-dark-bg to-purple-950">
-        <div className="max-w-md w-full bg-dark-card rounded-xl p-8 border border-neon-violet/30">
-          <div className="text-center mb-8">
-            <Music className="w-16 h-16 mx-auto mb-4 text-neon-violet" />
-            <h1 className="text-3xl font-bold mb-2">Créer une Session</h1>
-            <p className="text-gray-400">Commencez votre soirée Vibe Control</p>
-          </div>
+        <div className="max-w-md w-full">
+          {/* Back to home link */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-neon-violet transition-colors mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour à l'accueil
+          </Link>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">
-                Nom de la session
-              </label>
-              <input
-                type="text"
-                value={sessionName}
-                onChange={(e) => setSessionName(e.target.value)}
-                placeholder="Ex: Soirée du Vendredi"
-                className="w-full bg-dark-bg px-4 py-3 rounded-lg border border-neon-violet/30 focus:outline-none focus:border-neon-violet text-white placeholder-gray-500"
-                onKeyDown={(e) => e.key === "Enter" && handleCreateSession()}
-              />
+          <div className="bg-dark-card rounded-xl p-8 border border-neon-violet/30">
+            <div className="text-center mb-8">
+              <Music className="w-16 h-16 mx-auto mb-4 text-neon-violet" />
+              <h1 className="text-3xl font-bold mb-2">Créer une Session</h1>
+              <p className="text-gray-400">
+                Commencez votre soirée Vibe Control
+              </p>
             </div>
 
-            <button
-              onClick={handleCreateSession}
-              disabled={!sessionName.trim() || isCreating}
-              className="w-full btn-neon btn-neon-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCreating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Création...
-                </>
-              ) : (
-                <>
-                  <Plus className="w-5 h-5" />
-                  Créer la session
-                </>
-              )}
-            </button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">
+                  Nom de la session
+                </label>
+                <input
+                  type="text"
+                  value={sessionName}
+                  onChange={(e) => setSessionName(e.target.value)}
+                  placeholder="Ex: Soirée du Vendredi"
+                  className="w-full bg-dark-bg px-4 py-3 rounded-lg border border-neon-violet/30 focus:outline-none focus:border-neon-violet text-white placeholder-gray-500"
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateSession()}
+                />
+              </div>
+
+              <button
+                onClick={handleCreateSession}
+                disabled={!sessionName.trim() || isCreating}
+                className="w-full btn-neon btn-neon-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Création...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5" />
+                    Créer la session
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </main>

@@ -9,7 +9,7 @@
 }
 
 body {
-  @apply bg-dark-bg text-white antialiased;
+  @apply bg-white text-gray-900 antialiased;
 }
 
 /* Custom scrollbar */
@@ -18,18 +18,45 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-dark-bg;
+  @apply bg-gray-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-neon-violet rounded-full;
+  @apply bg-primary-500 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-neon-cyan;
+  @apply bg-primary-600;
 }
 
-/* Neon glow utility classes */
+/* Professional button styles */
+.btn-primary {
+  @apply px-6 py-3 rounded-lg font-semibold bg-primary-600 text-white transition-all duration-300 hover:bg-primary-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 rounded-lg font-semibold bg-white text-primary-600 border-2 border-primary-600 transition-all duration-300 hover:bg-primary-50;
+}
+
+.btn-outline {
+  @apply px-6 py-3 rounded-lg font-semibold bg-transparent text-gray-700 border-2 border-gray-300 transition-all duration-300 hover:border-gray-400 hover:bg-gray-50;
+}
+
+/* Section container */
+.section-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300;
+}
+
+.card-feature {
+  @apply p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-300;
+}
+
+/* Legacy neon styles for backward compatibility (host/guest pages) */
 .neon-glow-violet {
   box-shadow:
     0 0 10px rgba(157, 78, 221, 0.5),
@@ -42,7 +69,6 @@ body {
     0 0 20px rgba(0, 217, 255, 0.3);
 }
 
-/* Button animations */
 .btn-neon {
   @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105;
 }
