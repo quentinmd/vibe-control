@@ -75,11 +75,6 @@ export default function YouTubePlayer({
       return;
     }
 
-    if (!currentTrack) {
-      console.log("⏳ En attente d'un track pour créer le player...");
-      return;
-    }
-
     if (player) {
       console.log("ℹ️ Player déjà créé");
       return;
