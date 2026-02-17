@@ -97,7 +97,7 @@ EXECUTE FUNCTION handle_new_user();
 -- car elles utilisent des host_id TEXT qui ne correspondent pas à de vrais users
 -- Décommentez la ligne ci-dessous pour exécuter le nettoyage
 
--- TRUNCATE TABLE sessions CASCADE;
+TRUNCATE TABLE sessions CASCADE;
 
 -- Alternative: Garder les sessions en créant un utilisateur fictif
 -- et en migrant les sessions vers cet utilisateur.
