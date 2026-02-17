@@ -39,10 +39,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const supabase = createClient();
 
   // Charger le profil utilisateur
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string, retryCount = 0): Promise<void> => {
+    // Éviter les appels multiples simultanés
+    if (loadingProfile) {
+      console.log("Profile loading already in progress, skipping...");
+      return;
+    }
+
+    setLoadingProfile(true);
+
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -51,43 +60,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        // Si le profil n'existe pas (PGRST116 = no rows), le créer
+        // Si le profil n'existe pas (PGRST116 = no rows)
         if (error.code === "PGRST116") {
-          console.log("Profile not found, creating one...");
-          const { data: userData } = await supabase.auth.getUser();
-
-          if (userData.user) {
-            const { data: newProfile, error: createError } = await supabase
-              .from("profiles")
-              .insert({
-                id: userId,
-                email: userData.user.email,
-                full_name:
-                  userData.user.user_metadata?.full_name ||
-                  userData.user.user_metadata?.name ||
-                  userData.user.email?.split("@")[0],
-                subscription_tier: "free",
-              })
-              .select()
-              .single();
-
-            if (createError) {
-              console.error("Error creating profile:", createError);
-              return;
-            }
-
-            setProfile(newProfile);
-            return;
+          // Le trigger devrait avoir créé le profil
+          // On réessaie une fois après 1 seconde (le temps que le trigger s'exécute)
+          if (retryCount < 1) {
+            console.log("Profile not found, retrying in 1s...");
+            setLoadingProfile(false);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            return loadProfile(userId, retryCount + 1);
           }
+
+          console.warn("Profile not found after retry for user:", userId);
+          console.warn(
+            "Le trigger Supabase n'a peut-être pas créé le profil automatiquement.",
+          );
+          setProfile(null);
+          setLoadingProfile(false);
+          return;
         }
 
         console.error("Error loading profile:", error);
+        setProfile(null);
+        setLoadingProfile(false);
         return;
       }
 
       setProfile(data);
+      setLoadingProfile(false);
     } catch (error) {
       console.error("Error loading profile:", error);
+      setProfile(null);
+      setLoadingProfile(false);
     }
   };
 

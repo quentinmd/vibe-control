@@ -149,10 +149,28 @@ export default function HostPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
-        <p className="text-gray-600">Configuration de votre compte...</p>
-        <p className="text-sm text-gray-500 mt-2">
-          Si cette page persiste, veuillez vous déconnecter et vous reconnecter.
+        <p className="text-gray-600 mb-4">Configuration de votre compte...</p>
+        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
+          Si cette page persiste, essayez de vous déconnecter et de vous
+          reconnecter.
         </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Recharger la page
+          </button>
+          <button
+            onClick={() => {
+              signOut();
+              window.location.href = "/login";
+            }}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Se déconnecter
+          </button>
+        </div>
       </div>
     );
   }
