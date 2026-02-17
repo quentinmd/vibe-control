@@ -2,7 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase-server";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// Vérifier que la clé secrète est bien chargée
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+console.log("Stripe key check:", {
+  defined: !!stripeSecretKey,
+  prefix: stripeSecretKey?.substring(0, 7),
+  length: stripeSecretKey?.length,
+});
+
+if (!stripeSecretKey || !stripeSecretKey.startsWith("sk_")) {
+  console.error("ERREUR: STRIPE_SECRET_KEY is not defined or is invalid!");
+  console.error("Current value prefix:", stripeSecretKey?.substring(0, 20));
+}
+
+const stripe = new Stripe(stripeSecretKey!);
 
 export async function POST(req: NextRequest) {
   try {
