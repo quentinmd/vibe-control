@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // Utiliser le service role key pour bypasser RLS
 const supabase = createClient(
@@ -42,7 +40,7 @@ export async function POST(req: NextRequest) {
 
         // Récupérer les détails de la subscription
         if (session.mode === "subscription" && session.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(
+          const subscription: any = await stripe.subscriptions.retrieve(
             session.subscription as string,
           );
 
@@ -63,12 +61,12 @@ export async function POST(req: NextRequest) {
               stripe_price_id: subscription.items.data[0].price.id,
               status: subscription.status,
               current_period_start: new Date(
-                (subscription.current_period_start as number) * 1000,
+                subscription.current_period_start * 1000,
               ).toISOString(),
               current_period_end: new Date(
-                (subscription.current_period_end as number) * 1000,
+                subscription.current_period_end * 1000,
               ).toISOString(),
-              cancel_at_period_end: subscription.cancel_at_period_end,
+              cancel_at_period_end: subscription.cancel_at_period_end || false,
             });
           }
         }
@@ -76,7 +74,7 @@ export async function POST(req: NextRequest) {
       }
 
       case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription: any = event.data.object;
 
         // Trouver l'utilisateur via stripe_customer_id
         const { data: profile } = await supabase
@@ -92,12 +90,12 @@ export async function POST(req: NextRequest) {
             .update({
               status: subscription.status,
               current_period_start: new Date(
-                (subscription.current_period_start as number) * 1000,
+                subscription.current_period_start * 1000,
               ).toISOString(),
               current_period_end: new Date(
-                (subscription.current_period_end as number) * 1000,
+                subscription.current_period_end * 1000,
               ).toISOString(),
-              cancel_at_period_end: subscription.cancel_at_period_end,
+              cancel_at_period_end: subscription.cancel_at_period_end || false,
             })
             .eq("stripe_subscription_id", subscription.id);
 
