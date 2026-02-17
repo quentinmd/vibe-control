@@ -68,7 +68,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     },
     cta: "Démarrer Premium",
     popular: true,
-    stripePriceId: "price_1T1mH4K4C9lHKe8XXEhvCQWI", 
+    stripePriceId: "price_1T1o2FK4C9lHKe8XMoJ6oj8R",
   },
   {
     id: "pro",
@@ -95,8 +95,8 @@ export const PRICING_PLANS: PricingPlan[] = [
       guests: "Illimité",
       duration: "Illimité",
     },
-    cta: "Contacter l'équipe",
-    stripePriceId: "price_1T1mJqK4C9lHKe8XjEuktDFy",
+    cta: "Démarrer Pro",
+    stripePriceId: "price_1T1o2SK4C9lHKe8XsKkNkoNu",
   },
 ];
 
