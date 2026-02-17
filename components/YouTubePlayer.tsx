@@ -210,7 +210,7 @@ export default function YouTubePlayer({
         }
       }
     };
-  }, [isAPIReady, player, currentTrack]);
+  }, [isAPIReady, player]);
 
   // Réinitialiser hasLoadedTrack quand currentTrack devient null
   useEffect(() => {

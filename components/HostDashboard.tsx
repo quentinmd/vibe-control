@@ -17,9 +17,21 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
   // Mettre à jour le morceau en cours quand la playlist change
   useEffect(() => {
-    if (approvedTracks.length > 0 && !currentTrack) {
+    // Si le track actuel n'est plus dans la liste approved (il a été joué/rejeté)
+    if (currentTrack && !approvedTracks.find((t) => t.id === currentTrack.id)) {
+      // Passer au track suivant
+      if (approvedTracks.length > 0) {
+        setCurrentTrack(approvedTracks[0]);
+      } else {
+        setCurrentTrack(null);
+      }
+    }
+    // Si aucun track en cours mais des tracks disponibles
+    else if (!currentTrack && approvedTracks.length > 0) {
       setCurrentTrack(approvedTracks[0]);
-    } else if (approvedTracks.length === 0) {
+    }
+    // Si plus de tracks disponibles
+    else if (approvedTracks.length === 0 && currentTrack) {
       setCurrentTrack(null);
     }
   }, [approvedTracks, currentTrack]);
@@ -105,6 +117,10 @@ export default function HostDashboard({ session }: HostDashboardProps) {
           ),
         );
       }
+      // Retirer de approved si le track est terminé
+      else if (track.status === "played" || track.status === "rejected") {
+        setApprovedTracks((prev) => prev.filter((t) => t.id !== track.id));
+      }
     } else if (eventType === "DELETE") {
       setPendingTracks((prev) => prev.filter((t) => t.id !== oldRecord.id));
       setApprovedTracks((prev) => prev.filter((t) => t.id !== oldRecord.id));
@@ -143,6 +159,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
   // Gérer la fin d'un morceau
   const handleTrackEnd = async (trackId: string) => {
+    console.log("🎬 handleTrackEnd dans HostDashboard pour:", trackId);
     try {
       // Marquer comme "played"
       await supabase
@@ -150,9 +167,8 @@ export default function HostDashboard({ session }: HostDashboardProps) {
         .update({ status: "played", played_at: new Date().toISOString() })
         .eq("id", trackId);
 
-      // Passer au suivant
-      const nextTrack = approvedTracks.find((t) => t.id !== trackId);
-      setCurrentTrack(nextTrack || null);
+      // Le useEffect ci-dessus gérera automatiquement le passage au track suivant
+      // quand le realtime retirera ce track de approvedTracks
     } catch (error) {
       console.error("Erreur fin track:", error);
     }
