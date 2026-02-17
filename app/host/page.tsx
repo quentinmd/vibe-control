@@ -8,7 +8,16 @@ import { useAuth } from "@/lib/auth-context";
 import { canCreateSession } from "@/lib/subscription-limits";
 import HostDashboard from "@/components/HostDashboard";
 import SessionHeader from "@/components/SessionHeader";
-import { Music, Plus, Loader2, ArrowLeft, LogOut, Crown } from "lucide-react";
+import {
+  Music,
+  Plus,
+  Loader2,
+  ArrowLeft,
+  LogOut,
+  Crown,
+  History,
+  User,
+} from "lucide-react";
 
 export default function HostPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -140,21 +149,30 @@ export default function HostPage() {
       <main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
         <div className="max-w-md w-full">
           {/* Header avec profil */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <Link
               href="/"
               className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Retour à l'accueil
+              Accueil
             </Link>
-            <button
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Déconnexion
-            </button>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors"
+              >
+                <History className="w-4 h-4" />
+                Historique
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Déconnexion
+              </button>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">

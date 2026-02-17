@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, LogOut, QrCode as QrCodeIcon } from "lucide-react";
+import {
+  Copy,
+  Check,
+  LogOut,
+  QrCode as QrCodeIcon,
+  History,
+  ArrowLeft,
+} from "lucide-react";
+import Link from "next/link";
 
 interface SessionHeaderProps {
   sessionId: string;
@@ -103,8 +111,24 @@ export default function SessionHeader({
         </button>
       </div>
 
-      {/* Bouton terminer session */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
+      {/* Navigation et actions */}
+      <div className="mt-6 pt-6 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="px-4 py-2 rounded-lg font-semibold text-gray-700 hover:text-primary-600 hover:bg-gray-50 transition-all duration-200 flex items-center gap-2 border border-gray-300"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Accueil
+          </Link>
+          <Link
+            href="/dashboard"
+            className="px-4 py-2 rounded-lg font-semibold text-gray-700 hover:text-primary-600 hover:bg-gray-50 transition-all duration-200 flex items-center gap-2 border border-gray-300"
+          >
+            <History className="w-4 h-4" />
+            Historique
+          </Link>
+        </div>
         <button
           onClick={onEndSession}
           className="px-6 py-3 rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
