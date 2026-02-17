@@ -478,7 +478,7 @@ export default function YouTubePlayer({
       {isAPIReady && player && !isLoadingVideo && !searchError && (
         <div className="bg-green-50 rounded-lg p-3 border border-green-200">
           <p className="text-xs text-green-700 text-center">
-            ✅ Lecteur prêt • Ouvrez la console pour voir les logs
+            ✅ Lecteur prêt
           </p>
         </div>
       )}

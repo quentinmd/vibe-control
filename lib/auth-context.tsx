@@ -105,11 +105,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialiser la session
   useEffect(() => {
     // Obtenir la session initiale
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadProfile(session.user.id);
+        await loadProfile(session.user.id);
       }
       setLoading(false);
     });

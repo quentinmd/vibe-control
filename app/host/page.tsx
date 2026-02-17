@@ -135,17 +135,22 @@ export default function HostPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
+        <p className="text-sm text-gray-500 mt-4">Chargement...</p>
       </div>
     );
   }
 
   // Ne rien afficher si pas d'utilisateur (redirection en cours)
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Redirection...</p>
+      </div>
+    );
   }
 
-  // Si l'utilisateur existe mais pas de profil, le créer
-  if (user && !profile && !authLoading) {
+  // Si l'utilisateur existe mais pas de profil
+  if (user && !profile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
