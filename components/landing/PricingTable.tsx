@@ -22,7 +22,10 @@ export default function PricingTable() {
     return basePrice.toFixed(2);
   };
 
-  const handleSubscribe = async (planId: string, stripePriceId?: string) => {
+  const handleSubscribe = async (
+    planId: string,
+    stripePriceIds?: { monthly?: string; annual?: string },
+  ) => {
     // Plan gratuit → redirection vers /host
     if (planId === "free") {
       if (!user) {
@@ -41,8 +44,15 @@ export default function PricingTable() {
     }
 
     // Utilisateur connecté → créer session Stripe Checkout
+    const stripePriceId =
+      billingPeriod === "annual"
+        ? stripePriceIds?.annual
+        : stripePriceIds?.monthly;
+
     if (!stripePriceId) {
-      alert("Configuration Stripe manquante pour ce plan");
+      alert(
+        "Configuration Stripe manquante pour ce plan et cette période de facturation",
+      );
       return;
     }
 

@@ -14,7 +14,10 @@ export type PricingPlan = {
   };
   cta: string;
   popular?: boolean;
-  stripePriceId?: string; // For future Stripe integration
+  stripePriceId?: {
+    monthly?: string;
+    annual?: string;
+  };
 };
 
 export const PRICING_PLANS: PricingPlan[] = [
@@ -40,7 +43,10 @@ export const PRICING_PLANS: PricingPlan[] = [
       duration: "4h max",
     },
     cta: "Commencer gratuitement",
-    stripePriceId: "", // To be filled later
+    stripePriceId: {
+      monthly: "",
+      annual: "",
+    },
   },
   {
     id: "premium",
@@ -68,7 +74,10 @@ export const PRICING_PLANS: PricingPlan[] = [
     },
     cta: "Démarrer Premium",
     popular: true,
-    stripePriceId: "price_1T1o2FK4C9lHKe8XMoJ6oj8R",
+    stripePriceId: {
+      monthly: "price_1T1o2FK4C9lHKe8XMoJ6oj8R",
+      annual: "price_1T1pAWK4C9lHKe8XNJTYqGlx",
+    },
   },
   {
     id: "pro",
@@ -96,7 +105,10 @@ export const PRICING_PLANS: PricingPlan[] = [
       duration: "Illimité",
     },
     cta: "Démarrer Pro",
-    stripePriceId: "price_1T1o2SK4C9lHKe8XsKkNkoNu",
+    stripePriceId: {
+      monthly: "price_1T1o2SK4C9lHKe8XsKkNkoNu",
+      annual: "price_1T1pC7K4C9lHKe8XyLNAzNJx"
+    },
   },
 ];
 
