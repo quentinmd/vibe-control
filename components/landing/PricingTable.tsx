@@ -1,20 +1,75 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Loader2 } from "lucide-react";
 import { PRICING_PLANS } from "@/lib/pricing";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
 
 export default function PricingTable() {
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">(
     "monthly",
   );
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   const calculatePrice = (basePrice: number) => {
     if (billingPeriod === "annual") {
       return (basePrice * 12 * 0.8).toFixed(2);
     }
     return basePrice.toFixed(2);
+  };
+
+  const handleSubscribe = async (planId: string, stripePriceId?: string) => {
+    // Plan gratuit → redirection vers /host
+    if (planId === "free") {
+      if (!user) {
+        router.push("/signup");
+      } else {
+        router.push("/host");
+      }
+      return;
+    }
+
+    // Plans payants
+    if (!user) {
+      // Pas connecté → redirection vers signup
+      router.push("/signup");
+      return;
+    }
+
+    // Utilisateur connecté → créer session Stripe Checkout
+    if (!stripePriceId) {
+      alert("Configuration Stripe manquante pour ce plan");
+      return;
+    }
+
+    setLoadingPlan(planId);
+    try {
+      const response = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId: stripePriceId,
+          tier: planId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Erreur: " + (data.error || "Impossible de créer la session"));
+        setLoadingPlan(null);
+      }
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      alert("Erreur lors de la création de la session de paiement");
+      setLoadingPlan(null);
+    }
   };
 
   return (
@@ -121,15 +176,22 @@ export default function PricingTable() {
               </ul>
 
               {/* CTA Button */}
-              <Link href={plan.id === "free" ? "/host" : "/signup"}>
-                <button
-                  className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${
-                    plan.popular ? "btn-primary" : "btn-outline"
-                  }`}
-                >
-                  {plan.cta}
-                </button>
-              </Link>
+              <button
+                onClick={() => handleSubscribe(plan.id, plan.stripePriceId)}
+                disabled={loadingPlan === plan.id}
+                className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                  plan.popular ? "btn-primary" : "btn-outline"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {loadingPlan === plan.id ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Chargement...
+                  </>
+                ) : (
+                  plan.cta
+                )}
+              </button>
             </div>
           ))}
         </div>
