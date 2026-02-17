@@ -118,45 +118,10 @@ export default function YouTubePlayer({
               console.log("✅ YouTube Player prêt et opérationnel !");
               const playerInstance = event.target;
 
-              // Vérifier que l'iframe est attachée au DOM
-              const checkIframeAttached = () => {
-                try {
-                  const iframe = playerInstance.getIframe();
-                  if (
-                    iframe &&
-                    iframe.isConnected &&
-                    document.body.contains(iframe)
-                  ) {
-                    console.log(
-                      "✅ iFrame YouTube confirmée et attachée au DOM",
-                    );
-                    setPlayer(playerInstance);
-                    setIsPlayerReady(true);
-                    console.log(
-                      "🔓 Player déverrouillé, prêt à charger des vidéos",
-                    );
-                    return true;
-                  }
-                  return false;
-                } catch (e) {
-                  console.warn("⚠️ Erreur vérification iframe:", e);
-                  return false;
-                }
-              };
-
-              // Essayer immédiatement, sinon réessayer jusqu'à 5 fois
-              if (!checkIframeAttached()) {
-                let attempts = 0;
-                const checkInterval = setInterval(() => {
-                  attempts++;
-                  if (checkIframeAttached() || attempts >= 5) {
-                    clearInterval(checkInterval);
-                    if (attempts >= 5 && !checkIframeAttached()) {
-                      console.error("❌ Impossible d'attacher l'iframe au DOM");
-                    }
-                  }
-                }, 500);
-              }
+              // YouTube garantit que le player est prêt quand onReady est appelé
+              setPlayer(playerInstance);
+              setIsPlayerReady(true);
+              console.log("🔓 Player déverrouillé, prêt à charger des vidéos");
             },
             onStateChange: (event: any) => {
               const states: any = {
@@ -287,36 +252,7 @@ export default function YouTubePlayer({
           console.log("▶️ Chargement de la vidéo...");
 
           try {
-            // Vérifier que l'iframe existe (mais ne pas bloquer si pas attachée)
-            try {
-              const iframe = player.getIframe();
-              if (!iframe) {
-                console.error("❌ L'iframe YouTube n'existe pas");
-                setSearchError(true);
-                setIsLoadingVideo(false);
-                return;
-              }
-
-              const isAttached =
-                iframe.isConnected && document.body.contains(iframe);
-              console.log(
-                `🔍 État iframe: exists=${!!iframe}, isConnected=${iframe.isConnected}, inBody=${document.body.contains(iframe)}`,
-              );
-
-              if (!isAttached) {
-                console.warn(
-                  "⚠️ L'iframe n'est pas attachée, tentative de chargement quand même...",
-                );
-              }
-            } catch (iframeCheckError) {
-              console.warn(
-                "⚠️ Impossible de vérifier l'iframe:",
-                iframeCheckError,
-              );
-              // On continue quand même
-            }
-
-            // Essayer de charger la vidéo
+            // Charger la vidéo directement - YouTube garantit que le player est prêt
             if (typeof player.loadVideoById === "function") {
               console.log("🎬 Appel loadVideoById avec:", videoIdStr);
 
@@ -360,29 +296,7 @@ export default function YouTubePlayer({
             console.log("✅ Fallback réussi:", fallbackVideoId);
 
             try {
-              // Vérifier que l'iframe existe (mais ne pas bloquer)
-              try {
-                const iframe = player.getIframe();
-                if (!iframe) {
-                  console.error("❌ L'iframe YouTube n'existe pas (fallback)");
-                  setSearchError(true);
-                  return;
-                }
-
-                const isAttached =
-                  iframe.isConnected && document.body.contains(iframe);
-                if (!isAttached) {
-                  console.warn(
-                    "⚠️ L'iframe n'est pas attachée (fallback), tentative quand même...",
-                  );
-                }
-              } catch (iframeCheckError) {
-                console.warn(
-                  "⚠️ Impossible de vérifier l'iframe (fallback):",
-                  iframeCheckError,
-                );
-              }
-
+              // Charger la vidéo directement
               if (typeof player.loadVideoById === "function") {
                 player.loadVideoById({
                   videoId: fallbackVideoId,
