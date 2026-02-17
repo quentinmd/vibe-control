@@ -48,7 +48,7 @@ export default function GuestPage({ params }: PageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
       </div>
     );
@@ -56,7 +56,7 @@ export default function GuestPage({ params }: PageProps) {
 
   if (error || !session) {
     return (
-      <main className="min-h-screen px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10 flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      <main className="min-h-screen px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10 flex items-center justify-center bg-white">
         <div className="max-w-md w-full bg-white rounded-xl p-6 sm:p-8 border border-red-200 text-center shadow-lg">
           <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
           <h1 className="text-2xl font-bold mb-2 text-red-600">
@@ -74,7 +74,7 @@ export default function GuestPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10 bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    <main className="min-h-screen px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10 bg-white">
       <div className="max-w-4xl xl:max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">

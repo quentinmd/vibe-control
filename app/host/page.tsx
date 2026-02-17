@@ -211,33 +211,33 @@ export default function HostPage() {
             <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-lg border border-primary-200">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {profile.full_name?.[0]?.toUpperCase() ||
-                    profile.email[0].toUpperCase()}
+                  {profile?.full_name?.[0]?.toUpperCase() ||
+                    profile?.email?.[0]?.toUpperCase() || "U"}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900">
-                    {profile.full_name || profile.email}
+                    {profile?.full_name || profile?.email || "Utilisateur"}
                   </p>
                   <div className="flex items-center gap-2">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                        profile.subscription_tier === "pro"
+                        profile?.subscription_tier === "pro"
                           ? "bg-accent-100 text-accent-700"
-                          : profile.subscription_tier === "premium"
+                          : profile?.subscription_tier === "premium"
                             ? "bg-primary-100 text-primary-700"
                             : "bg-gray-100 text-gray-700"
                       }`}
                     >
-                      {profile.subscription_tier === "pro" && (
+                      {profile?.subscription_tier === "pro" && (
                         <Crown className="w-3 h-3" />
                       )}
-                      {profile.subscription_tier === "premium" && (
+                      {profile?.subscription_tier === "premium" && (
                         <Crown className="w-3 h-3" />
                       )}
                       Plan{" "}
-                      {profile.subscription_tier === "free"
+                      {profile?.subscription_tier === "free"
                         ? "Gratuit"
-                        : profile.subscription_tier === "premium"
+                        : profile?.subscription_tier === "premium"
                           ? "Premium"
                           : "Pro"}
                     </span>
