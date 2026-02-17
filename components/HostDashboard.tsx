@@ -2,8 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { supabase, Track, Session } from "@/lib/supabase";
-import { Music, Check, X, Play, Clock, PartyPopper } from "lucide-react";
+import {
+  Music,
+  Check,
+  X,
+  Play,
+  Clock,
+  PartyPopper,
+  Users,
+  BarChart3,
+  TrendingUp,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
 import YouTubePlayer from "./YouTubePlayer";
+import { getEngagementMetrics, type EngagementMetrics } from "@/lib/analytics";
 
 interface HostDashboardProps {
   session: Session;
@@ -14,6 +27,9 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   const [approvedTracks, setApprovedTracks] = useState<Track[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [metrics, setMetrics] = useState<EngagementMetrics | null>(null);
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [playedCount, setPlayedCount] = useState(0);
 
   // Mettre à jour le morceau en cours quand la playlist change
   useEffect(() => {
@@ -39,7 +55,13 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   // Charger les tracks initiales
   useEffect(() => {
     loadTracks();
+    loadMetrics();
   }, [session.id]);
+
+  // Recharger les métriques quand les tracks changent
+  useEffect(() => {
+    loadMetrics();
+  }, [pendingTracks.length, approvedTracks.length, rejectedCount, playedCount]);
 
   // Écouter les changements en temps réel (CŒUR DU SYSTÈME)
   useEffect(() => {
@@ -84,12 +106,36 @@ export default function HostDashboard({ session }: HostDashboardProps) {
         .eq("status", "approved")
         .order("order_index", { ascending: true });
 
+      // Charger les compteurs rejected et played
+      const { count: rejectedTotal } = await supabase
+        .from("tracks")
+        .select("*", { count: "exact", head: true })
+        .eq("session_id", session.id)
+        .eq("status", "rejected");
+
+      const { count: playedTotal } = await supabase
+        .from("tracks")
+        .select("*", { count: "exact", head: true })
+        .eq("session_id", session.id)
+        .eq("status", "played");
+
       setPendingTracks(pending || []);
       setApprovedTracks(approved || []);
+      setRejectedCount(rejectedTotal || 0);
+      setPlayedCount(playedTotal || 0);
     } catch (error) {
       console.error("Erreur chargement tracks:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMetrics = async () => {
+    try {
+      const metricsData = await getEngagementMetrics(session.id);
+      setMetrics(metricsData);
+    } catch (error) {
+      console.error("Erreur chargement métriques:", error);
     }
   };
 
@@ -132,7 +178,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
     try {
       const { error } = await supabase
         .from("tracks")
-        .update({ status: "approved" })
+        .update({ status: "approved", approved_at: new Date().toISOString() })
         .eq("id", trackId);
 
       if (error) throw error;
@@ -148,10 +194,11 @@ export default function HostDashboard({ session }: HostDashboardProps) {
     try {
       const { error } = await supabase
         .from("tracks")
-        .update({ status: "rejected" })
+        .update({ status: "rejected", rejected_at: new Date().toISOString() })
         .eq("id", trackId);
 
       if (error) throw error;
+      setRejectedCount((prev) => prev + 1);
     } catch (error) {
       console.error("Erreur rejet:", error);
     }
@@ -167,6 +214,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
         .update({ status: "played", played_at: new Date().toISOString() })
         .eq("id", trackId);
 
+      setPlayedCount((prev) => prev + 1);
       // Le useEffect ci-dessus gérera automatiquement le passage au track suivant
       // quand le realtime retirera ce track de approvedTracks
     } catch (error) {
@@ -190,6 +238,70 @@ export default function HostDashboard({ session }: HostDashboardProps) {
         playlist={approvedTracks}
         onTrackEnd={handleTrackEnd}
       />
+
+      {/* STATISTIQUES EN TEMPS RÉEL */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          icon={<Clock className="w-5 h-5" />}
+          label="En attente"
+          value={pendingTracks.length}
+          color="yellow"
+        />
+        <StatCard
+          icon={<ThumbsUp className="w-5 h-5" />}
+          label="Approuvés"
+          value={approvedTracks.length}
+          color="green"
+        />
+        <StatCard
+          icon={<ThumbsDown className="w-5 h-5" />}
+          label="Rejetés"
+          value={rejectedCount}
+          color="red"
+        />
+        <StatCard
+          icon={<Play className="w-5 h-5" />}
+          label="Joués"
+          value={playedCount}
+          color="blue"
+        />
+      </div>
+
+      {/* MÉTRIQUES D'ENGAGEMENT (si disponibles) */}
+      {metrics && (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-purple-600" />
+            Engagement de la Session
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <MetricItem
+              label="Taux d'approbation"
+              value={`${metrics.approvalRate.toFixed(0)}%`}
+              color="green"
+            />
+            <MetricItem
+              label="Contributeurs uniques"
+              value={metrics.uniqueContributors}
+              color="purple"
+            />
+            {metrics.avgResponseTimeMinutes !== null && (
+              <MetricItem
+                label="Temps de réponse moy."
+                value={`${metrics.avgResponseTimeMinutes.toFixed(1)} min`}
+                color="blue"
+              />
+            )}
+            {metrics.peakActivityHour !== null && (
+              <MetricItem
+                label="Heure de pointe"
+                value={`${metrics.peakActivityHour}h`}
+                color="pink"
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* GRILLE 2 COLONNES */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -328,6 +440,68 @@ export default function HostDashboard({ session }: HostDashboardProps) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Composants auxiliaires pour les statistiques
+
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  color: "yellow" | "green" | "red" | "blue";
+}) {
+  const colorClasses = {
+    yellow: "bg-yellow-50 border-yellow-200 text-yellow-700",
+    green: "bg-green-50 border-green-200 text-green-700",
+    red: "bg-red-50 border-red-200 text-red-700",
+    blue: "bg-blue-50 border-blue-200 text-blue-700",
+  };
+
+  const iconColorClasses = {
+    yellow: "text-yellow-600",
+    green: "text-green-600",
+    red: "text-red-600",
+    blue: "text-blue-600",
+  };
+
+  return (
+    <div className={`${colorClasses[color]} rounded-xl p-4 border`}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className={iconColorClasses[color]}>{icon}</div>
+        <p className="text-sm font-medium">{label}</p>
+      </div>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
+  );
+}
+
+function MetricItem({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  color: "green" | "purple" | "blue" | "pink";
+}) {
+  const colorClasses = {
+    green: "text-green-600",
+    purple: "text-purple-600",
+    blue: "text-blue-600",
+    pink: "text-pink-600",
+  };
+
+  return (
+    <div>
+      <p className="text-gray-600 text-xs mb-1">{label}</p>
+      <p className={`font-bold text-lg ${colorClasses[color]}`}>{value}</p>
     </div>
   );
 }
