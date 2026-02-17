@@ -97,8 +97,12 @@ WITH CHECK (true);
 -- =============================================
 
 -- Fonction trigger pour mettre à jour session_stats
+-- SECURITY DEFINER permet d'exécuter avec les privilèges du propriétaire
 CREATE OR REPLACE FUNCTION update_session_stats()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   -- Initialiser session_stats si elle n'existe pas
   INSERT INTO session_stats (session_id)
@@ -143,7 +147,10 @@ EXECUTE FUNCTION update_session_stats();
 -- =============================================
 
 CREATE OR REPLACE FUNCTION calculate_session_duration()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   -- Quand une session se termine, calculer la durée
   IF NEW.is_active = false AND OLD.is_active = true THEN
