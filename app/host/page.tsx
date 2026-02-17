@@ -261,7 +261,7 @@ export default function HostPage() {
             {limitError && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-600 font-medium">{limitError}</p>
-                {profile.subscription_tier === "free" && (
+                {profile?.subscription_tier === "free" && (
                   <Link
                     href="/#pricing"
                     className="mt-2 inline-block text-sm text-primary-600 hover:text-primary-700 font-semibold"
