@@ -4,43 +4,34 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase, Session } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
+import { canCreateSession } from "@/lib/subscription-limits";
 import HostDashboard from "@/components/HostDashboard";
 import SessionHeader from "@/components/SessionHeader";
-import { Music, Plus, Loader2, ArrowLeft } from "lucide-react";
+import { Music, Plus, Loader2, ArrowLeft, LogOut, Crown } from "lucide-react";
 
 export default function HostPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [sessionName, setSessionName] = useState("");
+  const [limitError, setLimitError] = useState<string | null>(null);
+  const { user, profile, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
+  // Rediriger vers login si non authentifié
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      // VERSION SIMPLIFIÉE SANS AUTH
-      // On génère ou récupère un ID utilisateur depuis le localStorage
-      let hostId = localStorage.getItem("vibe_control_host_id");
-
-      if (!hostId) {
-        // Générer un UUID simple
-        hostId =
-          "host_" +
-          Math.random().toString(36).substring(2, 15) +
-          Math.random().toString(36).substring(2, 15);
-        localStorage.setItem("vibe_control_host_id", hostId);
-      }
-
-      await loadActiveSession(hostId);
-    } catch (error) {
-      console.error("Erreur auth:", error);
-    } finally {
-      setIsLoading(false);
+    if (!authLoading && !user) {
+      router.push("/login");
     }
-  };
+  }, [user, authLoading, router]);
+
+  // Charger la session active quand l'utilisateur est connecté
+  useEffect(() => {
+    if (user) {
+      loadActiveSession(user.id);
+    }
+  }, [user]);
 
   const loadActiveSession = async (userId: string) => {
     try {
@@ -60,23 +51,31 @@ export default function HostPage() {
       setSession(data || null);
     } catch (error) {
       console.error("Erreur chargement session:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleCreateSession = async () => {
-    if (!sessionName.trim()) return;
+    if (!sessionName.trim() || !user) return;
+
+    setLimitError(null);
+
+    // Vérifier les limites d'abonnement
+    const limitCheck = await canCreateSession(user.id);
+
+    if (!limitCheck.allowed) {
+      setLimitError(limitCheck.reason || "Limite de sessions atteinte");
+      return;
+    }
 
     setIsCreating(true);
     try {
-      // Récupérer l'ID hôte du localStorage
-      const hostId = localStorage.getItem("vibe_control_host_id");
-      if (!hostId) throw new Error("ID hôte non trouvé");
-
       const { data, error } = await supabase
         .from("sessions")
         .insert([
           {
-            host_id: hostId,
+            host_id: user.id,
             name: sessionName,
             is_active: true,
           },
@@ -118,7 +117,12 @@ export default function HostPage() {
     }
   };
 
-  if (isLoading) {
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+  };
+
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
@@ -126,20 +130,73 @@ export default function HostPage() {
     );
   }
 
+  // Ne rien afficher si pas d'utilisateur (redirection en cours)
+  if (!user || !profile) {
+    return null;
+  }
+
   if (!session) {
     return (
       <main className="min-h-screen p-6 flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
         <div className="max-w-md w-full">
-          {/* Back to home link */}
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Retour à l'accueil
-          </Link>
+          {/* Header avec profil */}
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour à l'accueil
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Déconnexion
+            </button>
+          </div>
 
           <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
+            {/* Profil utilisateur */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-lg border border-primary-200">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  {profile.full_name?.[0]?.toUpperCase() ||
+                    profile.email[0].toUpperCase()}
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900">
+                    {profile.full_name || profile.email}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                        profile.subscription_tier === "pro"
+                          ? "bg-accent-100 text-accent-700"
+                          : profile.subscription_tier === "premium"
+                            ? "bg-primary-100 text-primary-700"
+                            : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {profile.subscription_tier === "pro" && (
+                        <Crown className="w-3 h-3" />
+                      )}
+                      {profile.subscription_tier === "premium" && (
+                        <Crown className="w-3 h-3" />
+                      )}
+                      Plan{" "}
+                      {profile.subscription_tier === "free"
+                        ? "Gratuit"
+                        : profile.subscription_tier === "premium"
+                          ? "Premium"
+                          : "Pro"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="text-center mb-8">
               <Music className="w-16 h-16 mx-auto mb-4 text-primary-600" />
               <h1 className="text-3xl font-bold mb-2 text-gray-900">
@@ -149,6 +206,21 @@ export default function HostPage() {
                 Commencez votre soirée Vibe Control
               </p>
             </div>
+
+            {/* Message d'erreur de limite */}
+            {limitError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 font-medium">{limitError}</p>
+                {profile.subscription_tier === "free" && (
+                  <Link
+                    href="/#pricing"
+                    className="mt-2 inline-block text-sm text-primary-600 hover:text-primary-700 font-semibold"
+                  >
+                    Passer à Premium →
+                  </Link>
+                )}
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { supabase, Track } from "@/lib/supabase";
+import { canAddSuggestion } from "@/lib/subscription-limits";
 import MusicSearch from "@/components/MusicSearch";
-import { Check, Loader2, Music } from "lucide-react";
+import { Check, Loader2, Music, AlertCircle } from "lucide-react";
 
 interface GuestSubmissionProps {
   sessionId: string;
@@ -25,6 +26,18 @@ export default function GuestSubmission({ sessionId }: GuestSubmissionProps) {
 
     setIsSubmitting(true);
     try {
+      // Vérifier les limites d'abonnement de l'hôte
+      const limitCheck = await canAddSuggestion(sessionId);
+
+      if (!limitCheck.allowed) {
+        alert(
+          limitCheck.reason ||
+            "Limite de suggestions atteinte pour cette session",
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("tracks")
         .insert([
