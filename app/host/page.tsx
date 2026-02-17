@@ -140,8 +140,21 @@ export default function HostPage() {
   }
 
   // Ne rien afficher si pas d'utilisateur (redirection en cours)
-  if (!user || !profile) {
+  if (!user) {
     return null;
+  }
+
+  // Si l'utilisateur existe mais pas de profil, le créer
+  if (user && !profile && !authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
+        <p className="text-gray-600">Configuration de votre compte...</p>
+        <p className="text-sm text-gray-500 mt-2">
+          Si cette page persiste, veuillez vous déconnecter et vous reconnecter.
+        </p>
+      </div>
+    );
   }
 
   if (!session) {

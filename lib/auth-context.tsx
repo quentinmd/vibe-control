@@ -51,6 +51,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
+        // Si le profil n'existe pas (PGRST116 = no rows), le créer
+        if (error.code === "PGRST116") {
+          console.log("Profile not found, creating one...");
+          const { data: userData } = await supabase.auth.getUser();
+
+          if (userData.user) {
+            const { data: newProfile, error: createError } = await supabase
+              .from("profiles")
+              .insert({
+                id: userId,
+                email: userData.user.email,
+                full_name:
+                  userData.user.user_metadata?.full_name ||
+                  userData.user.user_metadata?.name ||
+                  userData.user.email?.split("@")[0],
+                subscription_tier: "free",
+              })
+              .select()
+              .single();
+
+            if (createError) {
+              console.error("Error creating profile:", createError);
+              return;
+            }
+
+            setProfile(newProfile);
+            return;
+          }
+        }
+
         console.error("Error loading profile:", error);
         return;
       }
