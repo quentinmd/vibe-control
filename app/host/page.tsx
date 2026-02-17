@@ -212,7 +212,8 @@ export default function HostPage() {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                   {profile?.full_name?.[0]?.toUpperCase() ||
-                    profile?.email?.[0]?.toUpperCase() || "U"}
+                    profile?.email?.[0]?.toUpperCase() ||
+                    "U"}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900">
