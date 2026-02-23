@@ -3,6 +3,12 @@
 -- =============================================
 -- À exécuter SEULEMENT si vous avez déjà appliqué add-multi-hosts.sql
 -- et que vous rencontrez l'erreur "infinite recursion detected"
+-- ou "Session non trouvée" pour les guests
+
+-- PROBLÈMES CORRIGÉS:
+-- 1. Récursion infinie dans les policies RLS de session_hosts
+-- 2. Accès bloqué pour les guests (pages /guest/[sessionId])
+-- 3. Impossibilité de suggérer des morceaux (erreur 406)
 
 -- 1. Supprimer les anciennes policies qui causent la récursion
 DROP POLICY IF EXISTS "Hosts can read session hosts" ON session_hosts;
@@ -12,6 +18,9 @@ DROP POLICY IF EXISTS "Hosts and co-hosts can manage tracks" ON tracks;
 DROP POLICY IF EXISTS "Hosts and co-hosts can read their sessions" ON sessions;
 DROP POLICY IF EXISTS "Owners can update sessions" ON sessions;
 DROP POLICY IF EXISTS "Owners can delete sessions" ON sessions;
+DROP POLICY IF EXISTS "Anyone can read active sessions" ON sessions;
+DROP POLICY IF EXISTS "Anyone can read tracks in active sessions" ON tracks;
+DROP POLICY IF EXISTS "Anyone can suggest tracks" ON tracks;
 
 -- 2. Créer les fonctions helper avec SECURITY DEFINER (contournent RLS)
 CREATE OR REPLACE FUNCTION is_user_session_host(p_session_id UUID, p_user_id UUID)
@@ -73,12 +82,43 @@ USING (
   is_user_session_host(session_id, auth.uid())
 );
 
+-- Permettre à tout le monde de lire les tracks des sessions actives
+CREATE POLICY "Anyone can read tracks in active sessions"
+ON tracks
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM sessions
+    WHERE sessions.id = tracks.session_id
+    AND sessions.is_active = true
+  )
+);
+
+-- Permettre à tout le monde de suggérer des tracks (INSERT uniquement en status pending)
+CREATE POLICY "Anyone can suggest tracks"
+ON tracks
+FOR INSERT
+WITH CHECK (
+  status = 'pending'
+  AND EXISTS (
+    SELECT 1 FROM sessions
+    WHERE sessions.id = tracks.session_id
+    AND sessions.is_active = true
+  )
+);
+
 CREATE POLICY "Hosts and co-hosts can read their sessions"
 ON sessions
 FOR SELECT
 USING (
   is_user_session_host(id, auth.uid())
 );
+
+-- Permettre à tout le monde de lire les sessions actives (pour les guests)
+CREATE POLICY "Anyone can read active sessions"
+ON sessions
+FOR SELECT
+USING (is_active = true);
 
 CREATE POLICY "Owners can update sessions"
 ON sessions
@@ -146,5 +186,19 @@ BEGIN
 END;
 $$;
 
--- Migration complète !
--- Testez maintenant : la récursion infinie devrait être résolue
+-- =============================================
+-- ✅ MIGRATION COMPLÈTE
+-- =============================================
+-- 
+-- Corrections appliquées:
+-- ✅ Récursion infinie dans les policies RLS (fonctions SECURITY DEFINER)
+-- ✅ Accès public restauré pour les sessions actives (guests)
+-- ✅ Permissions de lecture des tracks pour les guests
+-- ✅ Permissions d'insertion de suggestions pour les guests
+--
+-- Testez maintenant:
+-- 1. Créer une session en tant que host
+-- 2. Accéder à /guest/[sessionId] en tant que non-authentifié
+-- 3. Suggérer un morceau
+-- 4. Vérifier que la suggestion apparaît dans le dashboard host
+

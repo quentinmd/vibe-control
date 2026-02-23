@@ -112,6 +112,8 @@ USING (
 
 -- Remplacer la policy existante pour permettre aux co-hosts de gérer les tracks
 DROP POLICY IF EXISTS "Host can manage tracks in own sessions" ON tracks;
+DROP POLICY IF EXISTS "Anyone can read tracks in active sessions" ON tracks;
+DROP POLICY IF EXISTS "Anyone can suggest tracks" ON tracks;
 
 CREATE POLICY "Hosts and co-hosts can manage tracks"
 ON tracks
@@ -120,8 +122,34 @@ USING (
   is_user_session_host(session_id, auth.uid())
 );
 
+-- Permettre à tout le monde de lire les tracks des sessions actives
+CREATE POLICY "Anyone can read tracks in active sessions"
+ON tracks
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM sessions
+    WHERE sessions.id = tracks.session_id
+    AND sessions.is_active = true
+  )
+);
+
+-- Permettre à tout le monde de suggérer des tracks (INSERT uniquement en status pending)
+CREATE POLICY "Anyone can suggest tracks"
+ON tracks
+FOR INSERT
+WITH CHECK (
+  status = 'pending'
+  AND EXISTS (
+    SELECT 1 FROM sessions
+    WHERE sessions.id = tracks.session_id
+    AND sessions.is_active = true
+  )
+);
+
 -- Remplacer la policy existante pour les sessions
 DROP POLICY IF EXISTS "Host can manage own sessions" ON sessions;
+DROP POLICY IF EXISTS "Anyone can read active sessions" ON sessions;
 
 CREATE POLICY "Hosts and co-hosts can read their sessions"
 ON sessions
@@ -129,6 +157,12 @@ FOR SELECT
 USING (
   is_user_session_host(id, auth.uid())
 );
+
+-- Permettre à tout le monde de lire les sessions actives (pour les guests)
+CREATE POLICY "Anyone can read active sessions"
+ON sessions
+FOR SELECT
+USING (is_active = true);
 
 -- Seulement les owners peuvent UPDATE les sessions (nom, terminer)
 CREATE POLICY "Owners can update sessions"

@@ -304,6 +304,29 @@ DROP POLICY IF EXISTS "Owners can delete sessions" ON sessions;
 # Exécutez
 ```
 
+### Erreur : "Session non trouvée" ou 406 lors de la suggestion (guests)
+
+**Solution :** Policies manquantes pour l'accès public
+
+Lors de la migration vers `session_hosts`, les policies permettant aux guests (utilisateurs non authentifiés) d'accéder aux sessions actives ont été supprimées. Le fichier [supabase/fix-session-hosts-recursion.sql](supabase/fix-session-hosts-recursion.sql) contient maintenant le correctif complet incluant :
+
+- Policy `"Anyone can read active sessions"` sur `sessions`
+- Policy `"Anyone can read tracks in active sessions"` sur `tracks`
+- Policy `"Anyone can suggest tracks"` sur `tracks`
+
+Ces policies sont essentielles pour que les guests puissent :
+
+1. Voir les sessions actives via le lien /guest/[sessionId]
+2. Lire les tracks déjà suggérés
+3. Soumettre leurs propres suggestions
+
+**Appliquez le correctif :**
+
+```sql
+-- Exécutez supabase/fix-session-hosts-recursion.sql
+-- Il contient tous les correctifs nécessaires
+```
+
 ### Erreur : "Fonctionnalité réservée aux abonnés Pro"
 
 **Solution :** L'utilisateur n'est pas Pro
