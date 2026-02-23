@@ -446,7 +446,7 @@ export default function DashboardPage() {
                           </p>
                         </div>
                         <Link
-                          href="/host"
+                          href={`/host?sessionId=${session.id}`}
                           className="text-primary-600 hover:text-primary-700 font-medium text-sm"
                         >
                           Gérer →

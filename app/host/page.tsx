@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase, Session } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -37,6 +37,8 @@ export default function HostPage() {
     refreshProfile,
   } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedSessionId = searchParams.get("sessionId");
 
   // Gérer l'état auth + chargement de session
   useEffect(() => {
@@ -55,8 +57,30 @@ export default function HostPage() {
     }
 
     setSessionError(null);
-    void loadActiveSession(user.id, shouldBlockUi);
-  }, [authLoading, user?.id, router]);
+    void loadActiveSession(user.id, shouldBlockUi, requestedSessionId);
+  }, [authLoading, user?.id, requestedSessionId, router]);
+
+  const syncSessionIdInUrl = (sessionId: string | null) => {
+    const currentSessionId = searchParams.get("sessionId");
+
+    if ((currentSessionId || null) === sessionId) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+
+    if (sessionId) {
+      nextParams.set("sessionId", sessionId);
+    } else {
+      nextParams.delete("sessionId");
+    }
+
+    const nextUrl = nextParams.toString()
+      ? `/host?${nextParams.toString()}`
+      : "/host";
+
+    router.replace(nextUrl);
+  };
 
   const withTimeout = async <T,>(
     promise: PromiseLike<T>,
@@ -77,7 +101,11 @@ export default function HostPage() {
     }
   };
 
-  const loadActiveSession = async (userId: string, shouldBlockUi: boolean) => {
+  const loadActiveSession = async (
+    userId: string,
+    shouldBlockUi: boolean,
+    targetSessionId: string | null,
+  ) => {
     if (isFetchingSessionRef.current) return;
     isFetchingSessionRef.current = true;
 
@@ -102,17 +130,20 @@ export default function HostPage() {
           .order("added_at", { ascending: false }),
       );
 
-      const loadLegacyActiveSession = async () => {
-        const { data, error } = await withTimeout(
-          supabase
-            .from("sessions")
-            .select("*")
-            .eq("host_id", userId)
-            .eq("is_active", true)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single(),
-        );
+      const loadLegacyActiveSession = async (sessionId?: string | null) => {
+        let query = supabase
+          .from("sessions")
+          .select("*")
+          .eq("host_id", userId)
+          .eq("is_active", true);
+
+        if (sessionId) {
+          query = query.eq("id", sessionId);
+        } else {
+          query = query.order("created_at", { ascending: false }).limit(1);
+        }
+
+        const { data, error } = await withTimeout(query.single());
 
         if (error && error.code !== "PGRST116") {
           throw error;
@@ -126,22 +157,34 @@ export default function HostPage() {
           "Error fetching session hosts, fallback to sessions:",
           hostsError,
         );
-        const legacySession = await loadLegacyActiveSession();
+        const legacySession = await loadLegacyActiveSession(targetSessionId);
         setSession(legacySession);
+        syncSessionIdInUrl(legacySession?.id || null);
         setSessionError(null);
         return;
       }
 
-      // Trouver la première session active
-      const activeSession = sessionHosts
-        ?.map((sh: any) => sh.session)
-        ?.find((s: any) => s?.is_active === true);
+      const hostSessions = sessionHosts?.map((sh: any) => sh.session) || [];
+
+      // Priorité à la session demandée dans l'URL
+      const requestedActiveSession = targetSessionId
+        ? hostSessions.find(
+            (s: any) => s?.id === targetSessionId && s?.is_active === true,
+          )
+        : null;
+
+      // Sinon première session active
+      const activeSession =
+        requestedActiveSession ||
+        hostSessions.find((s: any) => s?.is_active === true);
 
       if (activeSession) {
         setSession(activeSession);
+        syncSessionIdInUrl(activeSession.id);
       } else {
-        const legacySession = await loadLegacyActiveSession();
+        const legacySession = await loadLegacyActiveSession(targetSessionId);
         setSession(legacySession);
+        syncSessionIdInUrl(legacySession?.id || null);
       }
 
       setSessionError(null);
@@ -194,6 +237,7 @@ export default function HostPage() {
       if (error) throw error;
 
       setSession(data);
+      syncSessionIdInUrl(data.id);
       setSessionName("");
     } catch (error) {
       console.error("Erreur création session:", error);
@@ -220,6 +264,7 @@ export default function HostPage() {
       if (error) throw error;
 
       setSession(null);
+      syncSessionIdInUrl(null);
     } catch (error) {
       console.error("Erreur fin session:", error);
     }
