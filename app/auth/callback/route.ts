@@ -38,6 +38,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(fallbackLoginUrl);
   }
 
-  // Rediriger vers le dashboard/host après authentification réussie
-  return NextResponse.redirect(new URL("/host", request.url));
+  // Rediriger vers le dashboard après authentification réussie
+  return NextResponse.redirect(new URL("/dashboard", request.url));
 }

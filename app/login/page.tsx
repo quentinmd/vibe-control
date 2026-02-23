@@ -28,7 +28,7 @@ export default function LoginPage() {
     }
 
     // Rediriger vers le dashboard
-    router.push("/host");
+    router.push("/dashboard");
   };
 
   const handleGoogleLogin = async () => {
