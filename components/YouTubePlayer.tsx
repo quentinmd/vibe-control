@@ -93,7 +93,7 @@ export default function YouTubePlayer({
       if (!playerDivRef.current) {
         const playerDiv = document.createElement("div");
         playerDiv.id = playerIdRef.current;
-        playerDiv.className = "w-full aspect-video";
+        playerDiv.className = "w-full h-full";
         playerContainerRef.current.appendChild(playerDiv);
         playerDivRef.current = playerDiv;
         console.log("✅ Div player créé de manière impérative");
@@ -104,7 +104,7 @@ export default function YouTubePlayer({
 
       try {
         const ytPlayer = new window.YT.Player(playerIdRef.current, {
-          height: "360",
+          height: "100%",
           width: "100%",
           playerVars: {
             autoplay: 0,
@@ -447,7 +447,7 @@ export default function YouTubePlayer({
       </div>
 
       {/* Lecteur YouTube intégré */}
-      <div className="relative bg-black rounded-lg overflow-hidden shadow-inner">
+      <div className="relative bg-black rounded-lg overflow-hidden shadow-inner aspect-video">
         {isLoadingVideo && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
             <div className="text-center">
@@ -456,7 +456,7 @@ export default function YouTubePlayer({
             </div>
           </div>
         )}
-        <div ref={playerContainerRef} className="w-full aspect-video" />
+        <div ref={playerContainerRef} className="w-full h-full" />
       </div>
 
       {/* Message d'état */}
