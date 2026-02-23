@@ -6,6 +6,10 @@ import { AuthProvider } from "@/lib/auth-context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vibecontrol.live"),
+  alternates: {
+    canonical: "/",
+  },
   title:
     "Vibe Control - Playlist Collaborative pour Soirées | Contrôlez la Musique",
   description:
@@ -27,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    url: "https://vibecontrol.app",
+    url: "https://vibecontrol.live",
     siteName: "Vibe Control",
     title: "Vibe Control - Playlist Collaborative pour Soirées",
     description:
