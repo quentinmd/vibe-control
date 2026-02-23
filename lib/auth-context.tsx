@@ -46,6 +46,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const profileRequestUserIdRef = useRef<string | null>(null);
   const supabase = createClient();
 
+  const withTimeout = async <T,>(
+    promise: PromiseLike<T>,
+    timeoutMs = 10000,
+  ): Promise<T> => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error("AUTH_TIMEOUT"));
+      }, timeoutMs);
+    });
+
+    try {
+      return await Promise.race([Promise.resolve(promise), timeoutPromise]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
   // Charger le profil utilisateur
   const loadProfile = async (userId: string): Promise<void> => {
     if (
@@ -61,13 +80,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let profileData: Profile | null = null;
 
         for (let attempt = 0; attempt < 2; attempt++) {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select(
-              "id, email, full_name, avatar_url, subscription_tier, stripe_customer_id, spotify_user_id, spotify_connected_at, created_at, updated_at",
-            )
-            .eq("id", userId)
-            .single();
+          const { data, error } = await withTimeout(
+            supabase
+              .from("profiles")
+              .select(
+                "id, email, full_name, avatar_url, subscription_tier, stripe_customer_id, spotify_user_id, spotify_connected_at, created_at, updated_at",
+              )
+              .eq("id", userId)
+              .single(),
+          );
 
           if (error) {
             if (error.code === "PGRST116" && attempt < 1) {
@@ -120,23 +141,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeSession = async () => {
       setLoading(true);
-      const {
-        data: { session: initialSession },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session: initialSession },
+        } = await withTimeout(supabase.auth.getSession());
 
-      if (!isMountedRef.current) return;
+        if (!isMountedRef.current) return;
 
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
 
-      if (initialSession?.user) {
-        await loadProfile(initialSession.user.id);
-      } else {
+        if (initialSession?.user) {
+          await loadProfile(initialSession.user.id);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error("Error initializing auth session:", error);
+        if (!isMountedRef.current) return;
+        setSession(null);
+        setUser(null);
         setProfile(null);
+      } finally {
+        if (!isMountedRef.current) return;
+        setLoading(false);
       }
-
-      if (!isMountedRef.current) return;
-      setLoading(false);
     };
 
     void initializeSession();
@@ -145,19 +174,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMountedRef.current) return;
+      try {
+        if (!isMountedRef.current) return;
 
-      setSession(session);
-      setUser(session?.user ?? null);
+        setSession(session);
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        await loadProfile(session.user.id);
-      } else {
+        if (session?.user) {
+          await loadProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error("Error on auth state change:", error);
+        if (!isMountedRef.current) return;
         setProfile(null);
+      } finally {
+        if (!isMountedRef.current) return;
+        setLoading(false);
       }
-
-      if (!isMountedRef.current) return;
-      setLoading(false);
     });
 
     return () => {

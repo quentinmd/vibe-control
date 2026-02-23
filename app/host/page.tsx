@@ -71,6 +71,19 @@ function HostPageContent() {
     void loadActiveSession(user.id, shouldBlockUi, requestedSessionId);
   }, [authLoading, user?.id, requestedSessionId, router]);
 
+  useEffect(() => {
+    if (authLoading || !isLoading) return;
+
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      setSessionError(
+        "Le chargement a pris trop de temps. Vous pouvez continuer et réessayer.",
+      );
+    }, 12000);
+
+    return () => clearTimeout(timeoutId);
+  }, [authLoading, isLoading]);
+
   const syncSessionIdInUrl = (sessionId: string | null) => {
     const currentSessionId = searchParams.get("sessionId");
 
