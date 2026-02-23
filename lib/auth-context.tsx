@@ -80,15 +80,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let profileData: Profile | null = null;
 
         for (let attempt = 0; attempt < 2; attempt++) {
-          const { data, error } = await withTimeout(
-            supabase
-              .from("profiles")
-              .select(
-                "id, email, full_name, avatar_url, subscription_tier, stripe_customer_id, spotify_user_id, spotify_connected_at, created_at, updated_at",
-              )
-              .eq("id", userId)
-              .single(),
-          );
+          let data: Profile | null = null;
+          let error: any = null;
+
+          try {
+            const result = await withTimeout(
+              supabase
+                .from("profiles")
+                .select(
+                  "id, email, full_name, avatar_url, subscription_tier, stripe_customer_id, spotify_user_id, spotify_connected_at, created_at, updated_at",
+                )
+                .eq("id", userId)
+                .single(),
+            );
+            data = result.data;
+            error = result.error;
+          } catch (requestError: any) {
+            if (requestError?.message === "AUTH_TIMEOUT" && attempt < 1) {
+              await new Promise((resolve) => setTimeout(resolve, 600));
+              continue;
+            }
+            throw requestError;
+          }
 
           if (error) {
             if (error.code === "PGRST116" && attempt < 1) {
@@ -98,7 +111,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (error.code === "PGRST116") {
               console.warn("Profile not found after retry for user:", userId);
-              profileData = null;
+              if (profile?.id === userId) {
+                profileData = profile;
+              } else {
+                profileData = null;
+              }
               break;
             }
 
@@ -114,7 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("Error loading profile:", error);
         if (!isMountedRef.current) return;
-        setProfile(null);
       } finally {
         if (profileRequestUserIdRef.current === userId) {
           profileRequestRef.current = null;
@@ -188,7 +204,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("Error on auth state change:", error);
         if (!isMountedRef.current) return;
-        setProfile(null);
       } finally {
         if (!isMountedRef.current) return;
         setLoading(false);
