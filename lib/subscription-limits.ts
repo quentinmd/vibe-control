@@ -84,12 +84,13 @@ export async function canCreateSession(userId: string): Promise<{
     const tier = profile.subscription_tier as SubscriptionTier;
     const limits = getTierLimits(tier);
 
-    // Compter les sessions actives
-    const { count, error: countError } = await supabase
-      .from("sessions")
-      .select("*", { count: "exact", head: true })
-      .eq("host_id", userId)
-      .eq("is_active", true);
+    // Compter les sessions actives dont l'utilisateur est owner (via session_hosts)
+    const { data: sessionHosts, error: countError } = await supabase
+      .from("session_hosts")
+      .select("session_id, sessions!inner(is_active)")
+      .eq("user_id", userId)
+      .eq("role", "owner")
+      .eq("sessions.is_active", true);
 
     if (countError) {
       console.error("Error counting sessions:", countError);
@@ -99,7 +100,7 @@ export async function canCreateSession(userId: string): Promise<{
       };
     }
 
-    const currentCount = count || 0;
+    const currentCount = sessionHosts?.length || 0;
 
     if (currentCount >= limits.maxActiveSessions) {
       return {
@@ -134,14 +135,15 @@ export async function canAddSuggestion(sessionId: string): Promise<{
   const supabase = createBrowserClient();
 
   try {
-    // Récupérer la session et le profil de l'hôte
-    const { data: session, error: sessionError } = await supabase
-      .from("sessions")
-      .select("host_id")
-      .eq("id", sessionId)
+    // Récupérer l'owner de la session via session_hosts
+    const { data: sessionHost, error: sessionError } = await supabase
+      .from("session_hosts")
+      .select("user_id")
+      .eq("session_id", sessionId)
+      .eq("role", "owner")
       .single();
 
-    if (sessionError || !session) {
+    if (sessionError || !sessionHost) {
       return {
         allowed: false,
         reason: "Session non trouvée",
@@ -152,7 +154,7 @@ export async function canAddSuggestion(sessionId: string): Promise<{
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("subscription_tier")
-      .eq("id", session.host_id)
+      .eq("id", sessionHost.user_id)
       .single();
 
     if (profileError || !profile) {
@@ -209,18 +211,20 @@ export async function getUserUsageStats(userId: string) {
   const supabase = createBrowserClient();
 
   try {
-    // Compter les sessions actives
-    const { count: activeSessions } = await supabase
-      .from("sessions")
-      .select("*", { count: "exact", head: true })
-      .eq("host_id", userId)
-      .eq("is_active", true);
+    // Compter les sessions actives dont l'utilisateur est owner
+    const { data: activeHosts, error: activeError } = await supabase
+      .from("session_hosts")
+      .select("session_id, sessions!inner(is_active)")
+      .eq("user_id", userId)
+      .eq("role", "owner")
+      .eq("sessions.is_active", true);
 
-    // Compter le total de sessions
-    const { count: totalSessions } = await supabase
-      .from("sessions")
-      .select("*", { count: "exact", head: true })
-      .eq("host_id", userId);
+    // Compter le total de sessions dont l'utilisateur est owner
+    const { data: totalHosts, error: totalError } = await supabase
+      .from("session_hosts")
+      .select("session_id")
+      .eq("user_id", userId)
+      .eq("role", "owner");
 
     // Récupérer le tier
     const { data: profile } = await supabase
@@ -234,8 +238,8 @@ export async function getUserUsageStats(userId: string) {
 
     return {
       tier,
-      activeSessions: activeSessions || 0,
-      totalSessions: totalSessions || 0,
+      activeSessions: activeHosts?.length || 0,
+      totalSessions: totalHosts?.length || 0,
       limits,
     };
   } catch (error) {
