@@ -196,6 +196,23 @@ export default function HostDashboard({ session }: HostDashboardProps) {
     throw lastError;
   };
 
+  const moderateTrackViaApi = async (
+    trackId: string,
+    action: "approve" | "reject" | "played",
+  ) => {
+    const response = await fetch("/api/tracks/moderate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trackId, action }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data?.success) {
+      throw new Error(data?.error || "Erreur API de modération");
+    }
+  };
+
   // Gestion des mises à jour temps réel
   const handleRealtimeUpdate = (payload: any) => {
     const { eventType, new: newRecord, old: oldRecord } = payload;
@@ -241,10 +258,15 @@ export default function HostDashboard({ session }: HostDashboardProps) {
     setTrackUpdating(trackId, true);
 
     try {
-      await updateTrackStatusWithRetry(trackId, {
-        status: "approved",
-        approved_at: new Date().toISOString(),
-      });
+      try {
+        await moderateTrackViaApi(trackId, "approve");
+      } catch (apiError) {
+        console.warn("Fallback validation directe (client):", apiError);
+        await updateTrackStatusWithRetry(trackId, {
+          status: "approved",
+          approved_at: new Date().toISOString(),
+        });
+      }
 
       // Animation "Hop" gérée par Realtime
     } catch (error) {
@@ -260,10 +282,15 @@ export default function HostDashboard({ session }: HostDashboardProps) {
     setTrackUpdating(trackId, true);
 
     try {
-      await updateTrackStatusWithRetry(trackId, {
-        status: "rejected",
-        rejected_at: new Date().toISOString(),
-      });
+      try {
+        await moderateTrackViaApi(trackId, "reject");
+      } catch (apiError) {
+        console.warn("Fallback rejet direct (client):", apiError);
+        await updateTrackStatusWithRetry(trackId, {
+          status: "rejected",
+          rejected_at: new Date().toISOString(),
+        });
+      }
 
       setRejectedCount((prev) => prev + 1);
     } catch (error) {
@@ -281,10 +308,15 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
     try {
       // Marquer comme "played"
-      await updateTrackStatusWithRetry(trackId, {
-        status: "played",
-        played_at: new Date().toISOString(),
-      });
+      try {
+        await moderateTrackViaApi(trackId, "played");
+      } catch (apiError) {
+        console.warn("Fallback played direct (client):", apiError);
+        await updateTrackStatusWithRetry(trackId, {
+          status: "played",
+          played_at: new Date().toISOString(),
+        });
+      }
 
       setPlayedCount((prev) => prev + 1);
       // Le useEffect ci-dessus gérera automatiquement le passage au track suivant
