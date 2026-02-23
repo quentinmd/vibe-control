@@ -197,6 +197,20 @@ function HostPageContent() {
           )
         : null;
 
+      // Si la session demandée n'est pas présente dans session_hosts,
+      // fallback immédiat vers sessions (ancien modèle) pour éviter
+      // de revenir sur une ancienne session active.
+      if (targetSessionId && !requestedActiveSession) {
+        const requestedLegacySession =
+          await loadLegacyActiveSession(targetSessionId);
+        if (requestedLegacySession) {
+          setSession(requestedLegacySession);
+          syncSessionIdInUrl(requestedLegacySession.id);
+          setSessionError(null);
+          return;
+        }
+      }
+
       // Sinon première session active
       const activeSession =
         requestedActiveSession ||

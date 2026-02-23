@@ -19,6 +19,7 @@ import {
   Clock,
   Download,
   BarChart3,
+  Link2,
 } from "lucide-react";
 
 interface SessionData {
@@ -48,6 +49,11 @@ export default function DashboardPage() {
     useState<SessionStats | null>(null);
   const [showSessionDetails, setShowSessionDetails] = useState(false);
   const router = useRouter();
+
+  const canUseSpotify =
+    profile?.subscription_tier === "premium" ||
+    profile?.subscription_tier === "pro";
+  const isSpotifyConnected = Boolean(profile?.spotify_connected_at);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -106,6 +112,10 @@ export default function DashboardPage() {
     } finally {
       setManagingSubscription(false);
     }
+  };
+
+  const handleSpotifyConnect = () => {
+    router.push("/api/spotify/connect");
   };
 
   const handleViewSessionDetails = async (sessionId: string) => {
@@ -309,7 +319,7 @@ export default function DashboardPage() {
 
         {/* Actions abonnement */}
         <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl p-6 mb-8 border border-primary-200">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-1">
                 Gérer mon abonnement
@@ -319,35 +329,56 @@ export default function DashboardPage() {
                   ? "Passez à Premium pour débloquer toutes les fonctionnalités"
                   : "Modifiez votre abonnement, mettez à jour vos informations de paiement"}
               </p>
+
+              {canUseSpotify && (
+                <p className="text-sm mt-2 text-gray-700 inline-flex items-center gap-2">
+                  <Link2 className="w-4 h-4" />
+                  {isSpotifyConnected
+                    ? "Spotify connecté"
+                    : "Spotify non connecté"}
+                </p>
+              )}
             </div>
-            {profile.subscription_tier === "free" ? (
-              <Link
-                href="/#pricing"
-                className="btn-primary flex items-center gap-2"
-              >
-                <Crown className="w-4 h-4" />
-                Passer à Premium
-              </Link>
-            ) : (
-              <button
-                onClick={handleManageSubscription}
-                disabled={managingSubscription}
-                className="btn-secondary flex items-center gap-2"
-              >
-                {managingSubscription ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Chargement...
-                  </>
-                ) : (
-                  <>
-                    <Settings className="w-4 h-4" />
-                    Gérer
-                    <ExternalLink className="w-3 h-3" />
-                  </>
-                )}
-              </button>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {profile.subscription_tier === "free" ? (
+                <Link
+                  href="/#pricing"
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <Crown className="w-4 h-4" />
+                  Passer à Premium
+                </Link>
+              ) : (
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={managingSubscription}
+                  className="btn-secondary flex items-center gap-2"
+                >
+                  {managingSubscription ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Chargement...
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="w-4 h-4" />
+                      Gérer
+                      <ExternalLink className="w-3 h-3" />
+                    </>
+                  )}
+                </button>
+              )}
+
+              {canUseSpotify && !isSpotifyConnected && (
+                <button
+                  onClick={handleSpotifyConnect}
+                  className="btn-secondary flex items-center gap-2"
+                >
+                  <Link2 className="w-4 h-4" />
+                  Connecter Spotify
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
