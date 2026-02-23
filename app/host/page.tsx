@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { canCreateSession } from "@/lib/subscription-limits";
 import HostDashboard from "@/components/HostDashboard";
 import SessionHeader from "@/components/SessionHeader";
+import CoHostsManager from "@/components/CoHostsManager";
 import {
   Music,
   Plus,
@@ -44,20 +45,50 @@ export default function HostPage() {
 
   const loadActiveSession = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("sessions")
-        .select("*")
-        .eq("host_id", userId)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+      // Récupérer les sessions où l'utilisateur est host (owner ou moderator)
+      const { data: sessionHosts, error: hostsError } = await supabase
+        .from("session_hosts")
+        .select(
+          `
+          session:sessions (
+            id,
+            host_id,
+            name,
+            created_at,
+            is_active,
+            ended_at
+          )
+        `,
+        )
+        .eq("user_id", userId)
+        .order("added_at", { ascending: false });
 
-      if (error && error.code !== "PGRST116") {
-        throw error;
+      if (hostsError) {
+        console.error("Error fetching session hosts:", hostsError);
+        // Fallback sur l'ancienne méthode si session_hosts n'existe pas encore
+        const { data, error } = await supabase
+          .from("sessions")
+          .select("*")
+          .eq("host_id", userId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (error && error.code !== "PGRST116") {
+          throw error;
+        }
+
+        setSession(data || null);
+        return;
       }
 
-      setSession(data || null);
+      // Trouver la première session active
+      const activeSession = sessionHosts
+        ?.map((sh: any) => sh.session)
+        ?.find((s: any) => s?.is_active === true);
+
+      setSession(activeSession || null);
     } catch (error) {
       console.error("Erreur chargement session:", error);
     } finally {
@@ -349,6 +380,12 @@ export default function HostPage() {
           sessionName={session.name}
           onEndSession={handleEndSession}
         />
+
+        {/* Co-modérateurs Manager */}
+        <div className="mb-6">
+          <CoHostsManager sessionId={session.id} />
+        </div>
+
         <HostDashboard session={session} />
       </div>
     </main>
