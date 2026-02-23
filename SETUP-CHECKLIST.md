@@ -14,7 +14,31 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 STRIPE_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_... (après configuration webhook)
+
+# Spotify (Premium/Pro)
+NEXT_PUBLIC_SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_SECRET=...
+SPOTIFY_REDIRECT_URI=http://localhost:3000/api/spotify/callback
 ```
+
+### 1.b Configuration Spotify Dashboard
+
+1. Ouvrir https://developer.spotify.com/dashboard
+2. Créer une app : **Vibe Control**
+3. Website : URL de votre app (ex: `https://vibecontrol.live`)
+4. Redirect URIs à ajouter (exactement) :
+
+- `http://localhost:3000/api/spotify/callback`
+- `https://vibecontrol.live/api/spotify/callback`
+- `https://preview.vibecontrol.live/api/spotify/callback`
+
+5. APIs/SDKs à cocher :
+
+- `Web API`
+- `Web Playback SDK`
+
+6. Accepter les Developer Terms
 
 ### 2. Migration Supabase (CRITIQUE)
 
@@ -26,6 +50,8 @@ STRIPE_WEBHOOK_SECRET=whsec_... (après configuration webhook)
 2. Décommenter la ligne : `TRUNCATE TABLE sessions CASCADE;`
 3. Aller dans Supabase Dashboard > SQL Editor
 4. Exécuter tout le script
+
+**Puis exécuter aussi** `supabase/add-spotify-auth.sql` pour activer les colonnes Spotify.
 
 **Option B - Créer un utilisateur et migrer :**
 

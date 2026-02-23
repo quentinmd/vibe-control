@@ -18,6 +18,7 @@ import {
   Crown,
   History,
   User,
+  Link2,
 } from "lucide-react";
 
 function HostPageContent() {
@@ -39,6 +40,16 @@ function HostPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedSessionId = searchParams.get("sessionId");
+  const spotifyStatus = searchParams.get("spotify");
+
+  const canUseSpotify =
+    profile?.subscription_tier === "premium" ||
+    profile?.subscription_tier === "pro";
+  const isSpotifyConnected = Boolean(profile?.spotify_connected_at);
+
+  const handleSpotifyConnect = () => {
+    router.push("/api/spotify/connect");
+  };
 
   // Gérer l'état auth + chargement de session
   useEffect(() => {
@@ -395,9 +406,46 @@ function HostPageContent() {
                           ? "Premium"
                           : "Pro"}
                     </span>
+                    {canUseSpotify && (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          isSpotifyConnected
+                            ? "bg-green-100 text-green-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        <Link2 className="w-3 h-3" />
+                        {isSpotifyConnected
+                          ? "Spotify connecté"
+                          : "Spotify non connecté"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {canUseSpotify && !isSpotifyConnected && (
+                <div className="mt-4">
+                  <button
+                    onClick={handleSpotifyConnect}
+                    className="btn-secondary px-4 py-2 text-sm"
+                  >
+                    Connecter mon compte Spotify
+                  </button>
+                </div>
+              )}
+
+              {spotifyStatus === "connected" && (
+                <p className="mt-3 text-sm text-green-700 font-medium">
+                  ✅ Compte Spotify connecté avec succès.
+                </p>
+              )}
+
+              {spotifyStatus && spotifyStatus !== "connected" && (
+                <p className="mt-3 text-sm text-amber-700 font-medium">
+                  ⚠️ Impossible de connecter Spotify ({spotifyStatus}).
+                </p>
+              )}
             </div>
 
             <div className="text-center mb-8">
@@ -472,6 +520,20 @@ function HostPageContent() {
           sessionName={session.name}
           onEndSession={handleEndSession}
         />
+
+        {canUseSpotify && !isSpotifyConnected && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-3">
+            <p className="text-sm text-amber-800 font-medium">
+              Connectez Spotify pour activer la recherche Premium.
+            </p>
+            <button
+              onClick={handleSpotifyConnect}
+              className="btn-secondary px-4 py-2 text-sm whitespace-nowrap"
+            >
+              Connecter Spotify
+            </button>
+          </div>
+        )}
 
         <HostDashboard session={session} />
 

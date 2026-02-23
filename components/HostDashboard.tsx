@@ -16,6 +16,7 @@ import {
   ThumbsDown,
 } from "lucide-react";
 import YouTubePlayer from "./YouTubePlayer";
+import SpotifyPlayer from "./SpotifyPlayer";
 import { getEngagementMetrics, type EngagementMetrics } from "@/lib/analytics";
 
 interface HostDashboardProps {
@@ -34,6 +35,10 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   const [updatingTrackIds, setUpdatingTrackIds] = useState<Set<string>>(
     new Set(),
   );
+
+  const isSpotifyTrack =
+    Boolean(currentTrack?.spotify_id) &&
+    /^[A-Za-z0-9]{22}$/.test(String(currentTrack?.spotify_id || ""));
 
   // Mettre à jour le morceau en cours quand la playlist change
   useEffect(() => {
@@ -346,11 +351,19 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
       {/* LECTEUR YOUTUBE */}
       <div className="order-3 pt-3">
-        <YouTubePlayer
-          currentTrack={currentTrack}
-          playlist={approvedTracks}
-          onTrackEnd={handleTrackEnd}
-        />
+        {isSpotifyTrack ? (
+          <SpotifyPlayer
+            currentTrack={currentTrack}
+            playlist={approvedTracks}
+            onTrackEnd={handleTrackEnd}
+          />
+        ) : (
+          <YouTubePlayer
+            currentTrack={currentTrack}
+            playlist={approvedTracks}
+            onTrackEnd={handleTrackEnd}
+          />
+        )}
       </div>
 
       {/* STATISTIQUES EN TEMPS RÉEL */}

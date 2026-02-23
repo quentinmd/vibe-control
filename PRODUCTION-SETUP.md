@@ -1,5 +1,30 @@
 # Guide de mise en production Stripe
 
+## Spotify (Premium/Pro)
+
+### 0. Configurer Spotify Developer Dashboard
+
+1. Créer l'app `Vibe Control` sur https://developer.spotify.com/dashboard
+2. Website: URL de production
+3. Redirect URIs (obligatoire, exactes):
+   - `http://localhost:3000/api/spotify/callback`
+   - `https://vibecontrol.live/api/spotify/callback`
+   - `https://preview.vibecontrol.live/api/spotify/callback`
+4. Activer: `Web API` + `Web Playback SDK`
+
+### Variables d'environnement Spotify
+
+Ajoutez dans Vercel (Production + Preview):
+
+```env
+NEXT_PUBLIC_SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_SECRET=...
+SPOTIFY_REDIRECT_URI=https://vibecontrol.live/api/spotify/callback
+```
+
+En Preview, utilisez `SPOTIFY_REDIRECT_URI=https://preview.vibecontrol.live/api/spotify/callback`.
+
 ## ✅ Checklist complète
 
 ### 1. Activer ton compte Stripe en production
@@ -43,7 +68,7 @@
 
 1. Va sur https://dashboard.stripe.com/webhooks (mode production)
 2. Clique **"Ajouter un endpoint"**
-3. **URL de l'endpoint** : `https://vibe-control-rho.vercel.app/api/stripe/webhook`
+3. **URL de l'endpoint** : `https://vibecontrol.live/api/stripe/webhook`
 4. **Événements à écouter** :
    - ✅ `checkout.session.completed`
    - ✅ `customer.subscription.updated`
@@ -112,7 +137,7 @@ Vercel va automatiquement redéployer avec les nouvelles clés.
    - CVV : n'importe quel 3 chiffres
    - Date expiration : n'importe quelle date future
 
-3. Va sur ton site en production : https://vibe-control-rho.vercel.app/
+3. Va sur ton site en production : https://vibecontrol.live/
 4. Clique sur **"Démarrer Premium"**
 5. Vérifie que :
    - ✅ La session Stripe Checkout s'ouvre
@@ -139,7 +164,7 @@ Vercel va automatiquement redéployer avec les nouvelles clés.
 
 ### Webhook ne fonctionne pas
 
-→ Vérifie que l'URL du webhook est bien `https://vibe-control-rho.vercel.app/api/stripe/webhook` (avec HTTPS)
+→ Vérifie que l'URL du webhook est bien `https://vibecontrol.live/api/stripe/webhook` (avec HTTPS)
 
 ### Profil non mis à jour après paiement
 

@@ -12,6 +12,8 @@ interface Profile {
   avatar_url: string | null;
   subscription_tier: "free" | "premium" | "pro";
   stripe_customer_id: string | null;
+  spotify_user_id: string | null;
+  spotify_connected_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -61,7 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         for (let attempt = 0; attempt < 2; attempt++) {
           const { data, error } = await supabase
             .from("profiles")
-            .select("*")
+            .select(
+              "id, email, full_name, avatar_url, subscription_tier, stripe_customer_id, spotify_user_id, spotify_connected_at, created_at, updated_at",
+            )
             .eq("id", userId)
             .single();
 

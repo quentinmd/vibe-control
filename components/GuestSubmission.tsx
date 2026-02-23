@@ -103,7 +103,10 @@ export default function GuestSubmission({ sessionId }: GuestSubmissionProps) {
           <Music className="w-6 h-6 text-primary-600" />
           Suggérer un morceau
         </h2>
-        <MusicSearch onSelectTrack={handleSubmitSuggestion} />
+        <MusicSearch
+          sessionId={sessionId}
+          onSelectTrack={handleSubmitSuggestion}
+        />
       </div>
 
       {/* Historique des suggestions */}

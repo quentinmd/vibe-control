@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { Search, Music, Loader2 } from "lucide-react";
-import { searchYouTubeNoAPI } from "@/lib/youtubeApi";
 
-interface YouTubeSearchResult {
-  videoId: string;
+interface SearchResult {
+  id: string;
   title: string;
   artist: string;
-  thumbnail: string;
+  album?: string;
+  cover_url?: string;
+  spotify_id?: string;
+  source: "spotify" | "youtube";
 }
 
 interface Track {
@@ -21,49 +23,47 @@ interface Track {
 }
 
 interface MusicSearchProps {
+  sessionId: string;
   onSelectTrack: (track: Omit<Track, "id">) => void;
 }
 
-export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
+export default function MusicSearch({
+  sessionId,
+  onSelectTrack,
+}: MusicSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<YouTubeSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sourceUsed, setSourceUsed] = useState<"spotify" | "youtube" | null>(
+    null,
+  );
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
     setError(null);
+    setSourceUsed(null);
 
     try {
-      // Recherche directement sur YouTube via notre API
-      console.log("🔍 Recherche YouTube pour:", searchQuery);
-
       const response = await fetch(
-        `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
+        `/api/music-search?q=${encodeURIComponent(searchQuery)}&sessionId=${encodeURIComponent(sessionId)}`,
         { signal: AbortSignal.timeout(10000) },
       );
 
-      if (!response.ok) {
-        throw new Error("Erreur recherche YouTube");
-      }
-
       const data = await response.json();
 
-      if (data.videoId) {
-        // Créer un résultat unique depuis la réponse YouTube
-        const result: YouTubeSearchResult = {
-          videoId: data.videoId,
-          title: data.title || searchQuery,
-          artist: data.author || "Artiste inconnu",
-          thumbnail: `https://img.youtube.com/vi/${data.videoId}/mqdefault.jpg`,
-        };
-        setSearchResults([result]);
-        console.log("✅ Résultat trouvé:", result);
+      if (!response.ok) {
+        throw new Error(data?.error || "Erreur de recherche musicale");
+      }
+
+      if (data?.tracks?.length > 0) {
+        setSearchResults(data.tracks);
+        setSourceUsed(data.source || null);
       } else {
         setSearchResults([]);
-        setError("Aucun résultat trouvé sur YouTube");
+        setError("Aucun résultat trouvé");
       }
     } catch (err) {
       console.error("Erreur recherche:", err);
@@ -128,9 +128,9 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
                 className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
-                  {track.thumbnail ? (
+                  {track.cover_url ? (
                     <img
-                      src={track.thumbnail}
+                      src={track.cover_url}
                       alt={track.title}
                       className="w-16 h-16 rounded object-cover shadow-sm"
                     />
@@ -147,6 +147,10 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
                     <p className="text-sm text-gray-600 truncate">
                       {track.artist}
                     </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      Source:{" "}
+                      {track.source === "spotify" ? "Spotify" : "YouTube"}
+                    </p>
                   </div>
 
                   <button
@@ -154,7 +158,9 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
                       onSelectTrack({
                         title: track.title,
                         artist: track.artist,
-                        cover_url: track.thumbnail,
+                        album: track.album,
+                        cover_url: track.cover_url,
+                        spotify_id: track.spotify_id,
                       })
                     }
                     className="btn-secondary px-4 sm:px-6 py-2 sm:py-3 text-sm whitespace-nowrap"
@@ -175,6 +181,13 @@ export default function MusicSearch({ onSelectTrack }: MusicSearchProps) {
           <p>Recherchez un morceau pour commencer</p>
           <p className="text-xs text-gray-400 mt-2">Propulsé par YouTube</p>
         </div>
+      )}
+
+      {sourceUsed && searchResults.length > 0 && (
+        <p className="text-xs text-gray-500 text-center">
+          Recherche active via{" "}
+          {sourceUsed === "spotify" ? "Spotify" : "YouTube"}
+        </p>
       )}
 
       {/* Aucun résultat */}
