@@ -473,12 +473,12 @@ function HostPageContent() {
           onEndSession={handleEndSession}
         />
 
+        <HostDashboard session={session} />
+
         {/* Co-modérateurs Manager */}
         <div className="mb-6">
           <CoHostsManager sessionId={session.id} />
         </div>
-
-        <HostDashboard session={session} />
       </div>
     </main>
   );

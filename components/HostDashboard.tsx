@@ -337,22 +337,24 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 flex flex-col">
       {loadError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 order-1">
           <p className="text-sm text-red-700 font-medium">{loadError}</p>
         </div>
       )}
 
       {/* LECTEUR YOUTUBE */}
-      <YouTubePlayer
-        currentTrack={currentTrack}
-        playlist={approvedTracks}
-        onTrackEnd={handleTrackEnd}
-      />
+      <div className="order-3">
+        <YouTubePlayer
+          currentTrack={currentTrack}
+          playlist={approvedTracks}
+          onTrackEnd={handleTrackEnd}
+        />
+      </div>
 
       {/* STATISTIQUES EN TEMPS RÉEL */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 order-4">
         <StatCard
           icon={<Clock className="w-5 h-5" />}
           label="En attente"
@@ -381,7 +383,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
       {/* MÉTRIQUES D'ENGAGEMENT (si disponibles) */}
       {metrics && (
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200 order-5">
           <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-purple-600" />
             Engagement de la Session
@@ -416,7 +418,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
       )}
 
       {/* GRILLE 2 COLONNES */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 order-2">
         {/* COLONNE 1: EN ATTENTE */}
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
           <div className="flex items-center justify-between mb-6">
