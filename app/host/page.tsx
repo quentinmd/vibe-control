@@ -102,12 +102,7 @@ export default function HostPage() {
           .order("added_at", { ascending: false }),
       );
 
-      if (hostsError) {
-        console.warn(
-          "Error fetching session hosts, fallback to sessions:",
-          hostsError,
-        );
-        // Fallback sur l'ancienne méthode si session_hosts n'existe pas encore
+      const loadLegacyActiveSession = async () => {
         const { data, error } = await withTimeout(
           supabase
             .from("sessions")
@@ -123,7 +118,16 @@ export default function HostPage() {
           throw error;
         }
 
-        setSession(data || null);
+        return data || null;
+      };
+
+      if (hostsError) {
+        console.warn(
+          "Error fetching session hosts, fallback to sessions:",
+          hostsError,
+        );
+        const legacySession = await loadLegacyActiveSession();
+        setSession(legacySession);
         setSessionError(null);
         return;
       }
@@ -133,7 +137,13 @@ export default function HostPage() {
         ?.map((sh: any) => sh.session)
         ?.find((s: any) => s?.is_active === true);
 
-      setSession(activeSession || null);
+      if (activeSession) {
+        setSession(activeSession);
+      } else {
+        const legacySession = await loadLegacyActiveSession();
+        setSession(legacySession);
+      }
+
       setSessionError(null);
     } catch (error: any) {
       console.error("Erreur chargement session:", error);
