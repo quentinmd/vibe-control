@@ -490,7 +490,9 @@ export default function HostPage() {
       fallback={
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
           <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
-          <p className="text-gray-600 mb-2">Chargement de votre espace host...</p>
+          <p className="text-gray-600 mb-2">
+            Chargement de votre espace host...
+          </p>
         </div>
       }
     >
