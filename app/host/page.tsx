@@ -58,17 +58,20 @@ export default function HostPage() {
     void loadActiveSession(user.id, shouldBlockUi);
   }, [authLoading, user?.id, router]);
 
-  const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 8000) => {
+  const withTimeout = async <T,>(
+    promise: PromiseLike<T>,
+    timeoutMs = 8000,
+  ): Promise<T> => {
     let timeoutId: NodeJS.Timeout | null = null;
 
-    const timeoutPromise = new Promise<never>((_, reject) => {
+    const timeoutPromise = new Promise<T>((_, reject) => {
       timeoutId = setTimeout(() => {
         reject(new Error("SESSION_FETCH_TIMEOUT"));
       }, timeoutMs);
     });
 
     try {
-      return (await Promise.race([promise, timeoutPromise])) as T;
+      return await Promise.race([Promise.resolve(promise), timeoutPromise]);
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
     }
