@@ -35,6 +35,42 @@ WHERE NOT EXISTS (
 ON CONFLICT (session_id, user_id) DO NOTHING;
 
 -- =============================================
+-- FONCTIONS HELPER (pour éviter récursion RLS)
+-- =============================================
+
+-- Fonction pour vérifier si un utilisateur est host d'une session
+-- SECURITY DEFINER permet de contourner RLS lors de la vérification
+CREATE OR REPLACE FUNCTION is_user_session_host(p_session_id UUID, p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM session_hosts
+    WHERE session_id = p_session_id
+    AND user_id = p_user_id
+  );
+$$;
+
+-- Fonction pour vérifier si un utilisateur est owner d'une session
+CREATE OR REPLACE FUNCTION is_user_session_owner(p_session_id UUID, p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM session_hosts
+    WHERE session_id = p_session_id
+    AND user_id = p_user_id
+    AND role = 'owner'
+  );
+$$;
+
+-- =============================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =============================================
 
@@ -50,11 +86,7 @@ CREATE POLICY "Hosts can read session hosts"
 ON session_hosts
 FOR SELECT
 USING (
-  EXISTS (
-    SELECT 1 FROM session_hosts sh
-    WHERE sh.session_id = session_hosts.session_id
-    AND sh.user_id = auth.uid()
-  )
+  is_user_session_host(session_id, auth.uid())
 );
 
 -- Seulement les owners peuvent ajouter des co-hosts
@@ -62,12 +94,7 @@ CREATE POLICY "Owners can add co-hosts"
 ON session_hosts
 FOR INSERT
 WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM session_hosts
-    WHERE session_id = session_hosts.session_id
-    AND user_id = auth.uid()
-    AND role = 'owner'
-  )
+  is_user_session_owner(session_id, auth.uid())
 );
 
 -- Seulement les owners peuvent retirer des co-hosts (pas eux-mêmes)
@@ -75,13 +102,8 @@ CREATE POLICY "Owners can remove co-hosts"
 ON session_hosts
 FOR DELETE
 USING (
-  session_hosts.role = 'moderator' AND
-  EXISTS (
-    SELECT 1 FROM session_hosts sh
-    WHERE sh.session_id = session_hosts.session_id
-    AND sh.user_id = auth.uid()
-    AND sh.role = 'owner'
-  )
+  role = 'moderator' AND
+  is_user_session_owner(session_id, auth.uid())
 );
 
 -- =============================================
@@ -95,11 +117,7 @@ CREATE POLICY "Hosts and co-hosts can manage tracks"
 ON tracks
 FOR ALL
 USING (
-  EXISTS (
-    SELECT 1 FROM session_hosts
-    WHERE session_hosts.session_id = tracks.session_id
-    AND session_hosts.user_id = auth.uid()
-  )
+  is_user_session_host(session_id, auth.uid())
 );
 
 -- Remplacer la policy existante pour les sessions
@@ -109,11 +127,7 @@ CREATE POLICY "Hosts and co-hosts can read their sessions"
 ON sessions
 FOR SELECT
 USING (
-  EXISTS (
-    SELECT 1 FROM session_hosts
-    WHERE session_hosts.session_id = sessions.id
-    AND session_hosts.user_id = auth.uid()
-  )
+  is_user_session_host(id, auth.uid())
 );
 
 -- Seulement les owners peuvent UPDATE les sessions (nom, terminer)
@@ -121,12 +135,7 @@ CREATE POLICY "Owners can update sessions"
 ON sessions
 FOR UPDATE
 USING (
-  EXISTS (
-    SELECT 1 FROM session_hosts
-    WHERE session_hosts.session_id = sessions.id
-    AND session_hosts.user_id = auth.uid()
-    AND session_hosts.role = 'owner'
-  )
+  is_user_session_owner(id, auth.uid())
 );
 
 -- Seulement les owners peuvent DELETE les sessions
@@ -134,12 +143,7 @@ CREATE POLICY "Owners can delete sessions"
 ON sessions
 FOR DELETE
 USING (
-  EXISTS (
-    SELECT 1 FROM session_hosts
-    WHERE session_hosts.session_id = sessions.id
-    AND session_hosts.user_id = auth.uid()
-    AND session_hosts.role = 'owner'
-  )
+  is_user_session_owner(id, auth.uid())
 );
 
 -- Les utilisateurs authentifiés peuvent INSERT des sessions (création)
@@ -153,7 +157,12 @@ WITH CHECK (auth.uid() = host_id);
 -- =============================================
 
 CREATE OR REPLACE FUNCTION get_user_session_role(p_session_id UUID, p_user_id UUID)
-RETURNS TEXT AS $$
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+STABLE
+AS $$
 DECLARE
   user_role TEXT;
 BEGIN
@@ -164,14 +173,19 @@ BEGIN
   
   RETURN user_role;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- =============================================
 -- FONCTION: Vérifier si un utilisateur est owner
 -- =============================================
 
 CREATE OR REPLACE FUNCTION is_session_owner(p_session_id UUID, p_user_id UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+STABLE
+AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM session_hosts
@@ -180,14 +194,18 @@ BEGIN
     AND role = 'owner'
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- =============================================
 -- TRIGGER: Créer automatiquement l'owner dans session_hosts
 -- =============================================
 
 CREATE OR REPLACE FUNCTION auto_create_session_owner()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   -- Insérer automatiquement le créateur comme 'owner' dans session_hosts
   INSERT INTO session_hosts (session_id, user_id, role, added_by)
@@ -196,7 +214,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS trigger_auto_create_session_owner ON sessions;
 CREATE TRIGGER trigger_auto_create_session_owner

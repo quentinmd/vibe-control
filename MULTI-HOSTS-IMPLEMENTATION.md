@@ -271,6 +271,28 @@ Les modérateurs voient les changements en temps réel grâce à **Supabase Real
 
 ## 🐛 Troubleshooting
 
+### Erreur : "infinite recursion detected in policy for relation session_hosts"
+
+**Solution :** Récursion infinie dans les RLS policies (corrigé dans la dernière version)
+
+Cette erreur se produisait car les policies RLS sur `session_hosts` faisaient référence à la table elle-même, créant une boucle infinie. La migration SQL a été mise à jour pour utiliser des fonctions `SECURITY DEFINER` qui contournent RLS lors des vérifications de permissions.
+
+**Si vous avez déjà appliqué l'ancienne migration :**
+
+```sql
+-- 1. Supprimer les anciennes policies
+DROP POLICY IF EXISTS "Hosts can read session hosts" ON session_hosts;
+DROP POLICY IF EXISTS "Owners can add co-hosts" ON session_hosts;
+DROP POLICY IF EXISTS "Owners can remove co-hosts" ON session_hosts;
+DROP POLICY IF EXISTS "Hosts and co-hosts can manage tracks" ON tracks;
+DROP POLICY IF EXISTS "Hosts and co-hosts can read their sessions" ON sessions;
+DROP POLICY IF EXISTS "Owners can update sessions" ON sessions;
+DROP POLICY IF EXISTS "Owners can delete sessions" ON sessions;
+
+-- 2. Ré-exécuter la migration complète add-multi-hosts.sql
+-- (Elle contient maintenant les fonctions helper et les policies corrigées)
+```
+
 ### Erreur : "Table session_hosts does not exist"
 
 **Solution :** Migration SQL non appliquée
