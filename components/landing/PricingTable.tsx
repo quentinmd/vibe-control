@@ -26,12 +26,12 @@ export default function PricingTable() {
     planId: string,
     stripePriceIds?: { monthly?: string; annual?: string },
   ) => {
-    // Plan gratuit → redirection vers /host
+    // Plan gratuit → redirection vers /dashboard
     if (planId === "free") {
       if (!user) {
         router.push("/signup");
       } else {
-        router.push("/host");
+        router.push("/dashboard");
       }
       return;
     }

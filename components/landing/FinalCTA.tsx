@@ -30,7 +30,7 @@ export default function FinalCTA() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/host">
+            <Link href="/dashboard">
               <button className="bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 flex items-center justify-center gap-2 min-w-[220px]">
                 Commencer Maintenant
                 <ArrowRight className="w-5 h-5" />

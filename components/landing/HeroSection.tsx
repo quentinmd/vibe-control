@@ -23,7 +23,7 @@ export default function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/host">
+              <Link href="/dashboard">
                 <button className="btn-primary w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2">
                   Commencer gratuitement
                   <ArrowRight className="w-5 h-5" />

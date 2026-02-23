@@ -31,6 +31,9 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   const [metrics, setMetrics] = useState<EngagementMetrics | null>(null);
   const [rejectedCount, setRejectedCount] = useState(0);
   const [playedCount, setPlayedCount] = useState(0);
+  const [updatingTrackIds, setUpdatingTrackIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Mettre à jour le morceau en cours quand la playlist change
   useEffect(() => {
@@ -151,6 +154,48 @@ export default function HostDashboard({ session }: HostDashboardProps) {
     }
   };
 
+  const setTrackUpdating = (trackId: string, isUpdating: boolean) => {
+    setUpdatingTrackIds((prev) => {
+      const next = new Set(prev);
+      if (isUpdating) {
+        next.add(trackId);
+      } else {
+        next.delete(trackId);
+      }
+      return next;
+    });
+  };
+
+  const updateTrackStatusWithRetry = async (
+    trackId: string,
+    updates: Record<string, any>,
+    maxRetries = 2,
+  ) => {
+    let lastError: any = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const { error } = await supabase
+        .from("tracks")
+        .update(updates)
+        .eq("id", trackId);
+
+      if (!error) return;
+
+      lastError = error;
+      const isAbortError =
+        (error.message || "").includes("AbortError") ||
+        (error.hint || "").includes("Request was aborted");
+
+      if (!isAbortError || attempt === maxRetries) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+    }
+
+    throw lastError;
+  };
+
   // Gestion des mises à jour temps réel
   const handleRealtimeUpdate = (payload: any) => {
     const { eventType, new: newRecord, old: oldRecord } = payload;
@@ -192,50 +237,62 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
   // Valider une suggestion
   const handleApprove = async (trackId: string) => {
-    try {
-      const { error } = await supabase
-        .from("tracks")
-        .update({ status: "approved", approved_at: new Date().toISOString() })
-        .eq("id", trackId);
+    if (updatingTrackIds.has(trackId)) return;
+    setTrackUpdating(trackId, true);
 
-      if (error) throw error;
+    try {
+      await updateTrackStatusWithRetry(trackId, {
+        status: "approved",
+        approved_at: new Date().toISOString(),
+      });
 
       // Animation "Hop" gérée par Realtime
     } catch (error) {
       console.error("Erreur validation:", error);
+    } finally {
+      setTrackUpdating(trackId, false);
     }
   };
 
   // Refuser une suggestion
   const handleReject = async (trackId: string) => {
-    try {
-      const { error } = await supabase
-        .from("tracks")
-        .update({ status: "rejected", rejected_at: new Date().toISOString() })
-        .eq("id", trackId);
+    if (updatingTrackIds.has(trackId)) return;
+    setTrackUpdating(trackId, true);
 
-      if (error) throw error;
+    try {
+      await updateTrackStatusWithRetry(trackId, {
+        status: "rejected",
+        rejected_at: new Date().toISOString(),
+      });
+
       setRejectedCount((prev) => prev + 1);
     } catch (error) {
       console.error("Erreur rejet:", error);
+    } finally {
+      setTrackUpdating(trackId, false);
     }
   };
 
   // Gérer la fin d'un morceau
   const handleTrackEnd = async (trackId: string) => {
     console.log("🎬 handleTrackEnd dans HostDashboard pour:", trackId);
+    if (updatingTrackIds.has(trackId)) return;
+    setTrackUpdating(trackId, true);
+
     try {
       // Marquer comme "played"
-      await supabase
-        .from("tracks")
-        .update({ status: "played", played_at: new Date().toISOString() })
-        .eq("id", trackId);
+      await updateTrackStatusWithRetry(trackId, {
+        status: "played",
+        played_at: new Date().toISOString(),
+      });
 
       setPlayedCount((prev) => prev + 1);
       // Le useEffect ci-dessus gérera automatiquement le passage au track suivant
       // quand le realtime retirera ce track de approvedTracks
     } catch (error) {
       console.error("Erreur fin track:", error);
+    } finally {
+      setTrackUpdating(trackId, false);
     }
   };
 
@@ -383,6 +440,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
                   <div className="flex gap-2 mt-4">
                     <button
                       onClick={() => handleApprove(track.id)}
+                      disabled={updatingTrackIds.has(track.id)}
                       className="flex-1 px-4 py-2 rounded-lg font-semibold bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       <Check className="w-4 h-4" />
@@ -390,6 +448,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
                     </button>
                     <button
                       onClick={() => handleReject(track.id)}
+                      disabled={updatingTrackIds.has(track.id)}
                       className="flex-1 px-4 py-2 rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       <X className="w-4 h-4" />
