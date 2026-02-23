@@ -337,7 +337,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   }
 
   return (
-    <div className="space-y-6 flex flex-col">
+    <div className="flex flex-col gap-6">
       {loadError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 order-1">
           <p className="text-sm text-red-700 font-medium">{loadError}</p>
@@ -345,7 +345,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
       )}
 
       {/* LECTEUR YOUTUBE */}
-      <div className="order-3">
+      <div className="order-3 pt-3">
         <YouTubePlayer
           currentTrack={currentTrack}
           playlist={approvedTracks}
