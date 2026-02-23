@@ -83,7 +83,9 @@ export default function YouTubePlayer({
     // Attendre que le DOM soit prêt
     const timer = setTimeout(() => {
       if (!playerContainerRef.current) {
-        console.error("❌ Conteneur player introuvable");
+        console.log(
+          "⏳ Conteneur player non disponible, nouvelle tentative...",
+        );
         return;
       }
 
@@ -170,7 +172,7 @@ export default function YouTubePlayer({
         }
       }
     };
-  }, [isAPIReady, player]);
+  }, [isAPIReady, player, currentTrack?.id]);
 
   // Réinitialiser hasLoadedTrack quand currentTrack devient null
   useEffect(() => {
@@ -477,9 +479,7 @@ export default function YouTubePlayer({
 
       {isAPIReady && player && !isLoadingVideo && !searchError && (
         <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-          <p className="text-xs text-green-700 text-center">
-            ✅ Lecteur prêt
-          </p>
+          <p className="text-xs text-green-700 text-center">✅ Lecteur prêt</p>
         </div>
       )}
 
