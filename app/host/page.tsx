@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase, Session } from "@/lib/supabase";
@@ -23,10 +23,12 @@ import {
 export default function HostPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [sessionName, setSessionName] = useState("");
   const [limitError, setLimitError] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const isFetchingSessionRef = useRef(false);
   const {
     user,
     profile,
@@ -42,34 +44,60 @@ export default function HostPage() {
 
     if (!user) {
       setIsLoading(false);
+      setInitialLoadDone(false);
       router.replace("/login");
       return;
     }
 
-    setIsLoading(true);
-    setSessionError(null);
-    void loadActiveSession(user.id);
-  }, [authLoading, user, router]);
+    const shouldBlockUi = !initialLoadDone && !session;
+    if (shouldBlockUi) {
+      setIsLoading(true);
+    }
 
-  const loadActiveSession = async (userId: string) => {
+    setSessionError(null);
+    void loadActiveSession(user.id, shouldBlockUi);
+  }, [authLoading, user?.id, router]);
+
+  const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 8000) => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error("SESSION_FETCH_TIMEOUT"));
+      }, timeoutMs);
+    });
+
+    try {
+      return (await Promise.race([promise, timeoutPromise])) as T;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
+  const loadActiveSession = async (userId: string, shouldBlockUi: boolean) => {
+    if (isFetchingSessionRef.current) return;
+    isFetchingSessionRef.current = true;
+
     try {
       // Récupérer les sessions où l'utilisateur est host (owner ou moderator)
-      const { data: sessionHosts, error: hostsError } = await supabase
-        .from("session_hosts")
-        .select(
-          `
-          session:sessions (
-            id,
-            host_id,
-            name,
-            created_at,
-            is_active,
-            ended_at
+      const { data: sessionHosts, error: hostsError } = await withTimeout(
+        supabase
+          .from("session_hosts")
+          .select(
+            `
+            session:sessions (
+              id,
+              host_id,
+              name,
+              created_at,
+              is_active,
+              ended_at
+            )
+          `,
           )
-        `,
-        )
-        .eq("user_id", userId)
-        .order("added_at", { ascending: false });
+          .eq("user_id", userId)
+          .order("added_at", { ascending: false }),
+      );
 
       if (hostsError) {
         console.warn(
@@ -77,14 +105,16 @@ export default function HostPage() {
           hostsError,
         );
         // Fallback sur l'ancienne méthode si session_hosts n'existe pas encore
-        const { data, error } = await supabase
-          .from("sessions")
-          .select("*")
-          .eq("host_id", userId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+        const { data, error } = await withTimeout(
+          supabase
+            .from("sessions")
+            .select("*")
+            .eq("host_id", userId)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single(),
+        );
 
         if (error && error.code !== "PGRST116") {
           throw error;
@@ -102,11 +132,22 @@ export default function HostPage() {
 
       setSession(activeSession || null);
       setSessionError(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur chargement session:", error);
-      setSessionError("Impossible de charger vos sessions pour le moment.");
+
+      if (error?.message === "SESSION_FETCH_TIMEOUT") {
+        setSessionError(
+          "Le chargement prend trop de temps. La session reste affichée si déjà chargée.",
+        );
+      } else {
+        setSessionError("Impossible de charger vos sessions pour le moment.");
+      }
     } finally {
-      setIsLoading(false);
+      isFetchingSessionRef.current = false;
+      if (shouldBlockUi) {
+        setIsLoading(false);
+      }
+      setInitialLoadDone(true);
     }
   };
 
