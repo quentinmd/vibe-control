@@ -26,22 +26,30 @@ export default function HostPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [sessionName, setSessionName] = useState("");
   const [limitError, setLimitError] = useState<string | null>(null);
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    signOut,
+    refreshProfile,
+  } = useAuth();
   const router = useRouter();
 
-  // Rediriger vers login si non authentifié
+  // Gérer l'état auth + chargement de session
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
-  }, [user, authLoading, router]);
+    if (authLoading) return;
 
-  // Charger la session active quand l'utilisateur est connecté
-  useEffect(() => {
-    if (user) {
-      loadActiveSession(user.id);
+    if (!user) {
+      setIsLoading(false);
+      router.replace("/login");
+      return;
     }
-  }, [user]);
+
+    setIsLoading(true);
+    setSessionError(null);
+    void loadActiveSession(user.id);
+  }, [authLoading, user, router]);
 
   const loadActiveSession = async (userId: string) => {
     try {
@@ -64,7 +72,10 @@ export default function HostPage() {
         .order("added_at", { ascending: false });
 
       if (hostsError) {
-        console.error("Error fetching session hosts:", hostsError);
+        console.warn(
+          "Error fetching session hosts, fallback to sessions:",
+          hostsError,
+        );
         // Fallback sur l'ancienne méthode si session_hosts n'existe pas encore
         const { data, error } = await supabase
           .from("sessions")
@@ -80,6 +91,7 @@ export default function HostPage() {
         }
 
         setSession(data || null);
+        setSessionError(null);
         return;
       }
 
@@ -89,8 +101,10 @@ export default function HostPage() {
         ?.find((s: any) => s?.is_active === true);
 
       setSession(activeSession || null);
+      setSessionError(null);
     } catch (error) {
       console.error("Erreur chargement session:", error);
+      setSessionError("Impossible de charger vos sessions pour le moment.");
     } finally {
       setIsLoading(false);
     }
@@ -159,39 +173,14 @@ export default function HostPage() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push("/");
+    router.replace("/");
   };
-
-  // Timeout automatique pour éviter le loading infini
-  useEffect(() => {
-    if (authLoading || isLoading) {
-      const timeout = setTimeout(() => {
-        console.warn("⚠️ Loading timeout dépassé, forcer l'arrêt");
-        setIsLoading(false);
-      }, 5000); // 5 secondes max
-
-      return () => clearTimeout(timeout);
-    }
-  }, [authLoading, isLoading]);
 
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
-        <p className="text-gray-600 mb-2">Chargement...</p>
-        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
-          Si cette page reste bloquée, utilisez le bouton ci-dessous
-        </p>
-        <button
-          onClick={async () => {
-            await signOut();
-            window.location.href = "/login";
-          }}
-          className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
-        >
-          <LogOut className="w-4 h-4" />
-          Se déconnecter
-        </button>
+        <p className="text-gray-600 mb-2">Chargement de votre espace host...</p>
       </div>
     );
   }
@@ -212,21 +201,17 @@ export default function HostPage() {
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
         <p className="text-gray-600 mb-4">Configuration de votre compte...</p>
         <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
-          Si cette page persiste, essayez de vous déconnecter et de vous
-          reconnecter.
+          Cette étape prend parfois quelques secondes après connexion.
         </p>
         <div className="flex gap-3">
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => void refreshProfile()}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Recharger la page
+            Réessayer
           </button>
           <button
-            onClick={() => {
-              signOut();
-              window.location.href = "/login";
-            }}
+            onClick={() => void handleSignOut()}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             Se déconnecter
@@ -268,6 +253,14 @@ export default function HostPage() {
           </div>
 
           <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
+            {sessionError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700 font-medium">
+                  {sessionError}
+                </p>
+              </div>
+            )}
+
             {/* Profil utilisateur */}
             <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-lg border border-primary-200">
               <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -39,75 +39,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const isMountedRef = useRef(true);
+  const profileRequestRef = useRef<Promise<void> | null>(null);
+  const profileRequestUserIdRef = useRef<string | null>(null);
   const supabase = createClient();
 
   // Charger le profil utilisateur
-  const loadProfile = async (userId: string, retryCount = 0): Promise<void> => {
-    // Éviter les appels multiples simultanés
-    if (loadingProfile) {
-      console.log("Profile loading already in progress, skipping...");
+  const loadProfile = async (userId: string): Promise<void> => {
+    if (
+      profileRequestRef.current &&
+      profileRequestUserIdRef.current === userId
+    ) {
+      await profileRequestRef.current;
       return;
     }
 
-    setLoadingProfile(true);
+    const requestPromise = (async () => {
+      try {
+        let profileData: Profile | null = null;
 
-    try {
-      // Timeout de 3 secondes par requête
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Profile loading timeout")), 3000),
-      );
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .single();
 
-      const profilePromise = supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
+          if (error) {
+            if (error.code === "PGRST116" && attempt < 1) {
+              await new Promise((resolve) => setTimeout(resolve, 800));
+              continue;
+            }
 
-      const { data, error } = (await Promise.race([
-        profilePromise,
-        timeoutPromise,
-      ])) as any;
+            if (error.code === "PGRST116") {
+              console.warn("Profile not found after retry for user:", userId);
+              profileData = null;
+              break;
+            }
 
-      if (error) {
-        // Si le profil n'existe pas (PGRST116 = no rows)
-        if (error.code === "PGRST116") {
-          // Le trigger devrait avoir créé le profil
-          // On réessaie une fois après 1 seconde (le temps que le trigger s'exécute)
-          if (retryCount < 1) {
-            console.log("Profile not found, retrying in 1s...");
-            setLoadingProfile(false);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            return loadProfile(userId, retryCount + 1);
+            throw error;
           }
 
-          console.warn("Profile not found after retry for user:", userId);
-          console.warn(
-            "Le trigger Supabase n'a peut-être pas créé le profil automatiquement.",
-          );
-          setProfile(null);
-          setLoadingProfile(false);
-          return;
+          profileData = data;
+          break;
         }
 
+        if (!isMountedRef.current) return;
+        setProfile(profileData);
+      } catch (error) {
         console.error("Error loading profile:", error);
+        if (!isMountedRef.current) return;
         setProfile(null);
-        setLoadingProfile(false);
-        return;
+      } finally {
+        if (profileRequestUserIdRef.current === userId) {
+          profileRequestRef.current = null;
+          profileRequestUserIdRef.current = null;
+        }
       }
+    })();
 
-      console.log("Profile loaded successfully:", data);
-      setProfile(data);
-      setLoadingProfile(false);
-    } catch (error: any) {
-      if (error?.message === "Profile loading timeout") {
-        console.error("⏱️ Timeout lors du chargement du profil");
-      } else {
-        console.error("Error loading profile:", error);
-      }
-      setProfile(null);
-      setLoadingProfile(false);
-    }
+    profileRequestUserIdRef.current = userId;
+    profileRequestRef.current = requestPromise;
+    await requestPromise;
   };
 
   // Rafraîchir le profil
@@ -119,20 +112,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialiser la session
   useEffect(() => {
-    // Obtenir la session initiale
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await loadProfile(session.user.id);
+    isMountedRef.current = true;
+
+    const initializeSession = async () => {
+      setLoading(true);
+      const {
+        data: { session: initialSession },
+      } = await supabase.auth.getSession();
+
+      if (!isMountedRef.current) return;
+
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+
+      if (initialSession?.user) {
+        await loadProfile(initialSession.user.id);
+      } else {
+        setProfile(null);
       }
+
+      if (!isMountedRef.current) return;
       setLoading(false);
-    });
+    };
+
+    void initializeSession();
 
     // Écouter les changements d'authentification
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMountedRef.current) return;
+
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -142,10 +152,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null);
       }
 
+      if (!isMountedRef.current) return;
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMountedRef.current = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Inscription

@@ -32,7 +32,13 @@ interface SessionData {
 type TabType = "active" | "archives" | "analytics";
 
 export default function DashboardPage() {
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    signOut,
+    refreshProfile,
+  } = useAuth();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -156,41 +162,51 @@ export default function DashboardPage() {
   const activeSessions = sessions.filter((s) => s.is_active);
   const archivedSessions = sessions.filter((s) => !s.is_active);
 
-  // Timeout automatique pour éviter le loading infini
-  useEffect(() => {
-    if (authLoading || loading) {
-      const timeout = setTimeout(() => {
-        console.warn("⚠️ Loading timeout dépassé, forcer l'arrêt");
-        setLoading(false);
-      }, 5000); // 5 secondes max
-
-      return () => clearTimeout(timeout);
-    }
-  }, [authLoading, loading]);
-
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
         <p className="text-gray-600 mb-2">Chargement de votre dashboard...</p>
-        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
-          Si cette page reste bloquée, utilisez le bouton ci-dessous
-        </p>
-        <button
-          onClick={async () => {
-            await signOut();
-            window.location.href = "/login";
-          }}
-          className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-        >
-          Se déconnecter
-        </button>
       </div>
     );
   }
 
-  if (!user || !profile) {
-    return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Redirection...</p>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
+        <p className="text-gray-700 mb-3">Configuration de votre compte...</p>
+        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
+          Le profil est en cours de synchronisation. Réessayez dans quelques
+          secondes.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => void refreshProfile()}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Réessayer
+          </button>
+          <button
+            onClick={async () => {
+              await signOut();
+              router.replace("/login");
+            }}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

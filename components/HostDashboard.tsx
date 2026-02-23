@@ -27,6 +27,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
   const [approvedTracks, setApprovedTracks] = useState<Track[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<EngagementMetrics | null>(null);
   const [rejectedCount, setRejectedCount] = useState(0);
   const [playedCount, setPlayedCount] = useState(0);
@@ -89,35 +90,45 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
   const loadTracks = async () => {
     setIsLoading(true);
+    setLoadError(null);
+
     try {
       // Charger les tracks pending
-      const { data: pending } = await supabase
+      const { data: pending, error: pendingError } = await supabase
         .from("tracks")
         .select("*")
         .eq("session_id", session.id)
         .eq("status", "pending")
         .order("created_at", { ascending: true });
 
+      if (pendingError) throw pendingError;
+
       // Charger les tracks approved
-      const { data: approved } = await supabase
+      const { data: approved, error: approvedError } = await supabase
         .from("tracks")
         .select("*")
         .eq("session_id", session.id)
         .eq("status", "approved")
         .order("order_index", { ascending: true });
 
+      if (approvedError) throw approvedError;
+
       // Charger les compteurs rejected et played
-      const { count: rejectedTotal } = await supabase
+      const { count: rejectedTotal, error: rejectedError } = await supabase
         .from("tracks")
         .select("*", { count: "exact", head: true })
         .eq("session_id", session.id)
         .eq("status", "rejected");
 
-      const { count: playedTotal } = await supabase
+      if (rejectedError) throw rejectedError;
+
+      const { count: playedTotal, error: playedError } = await supabase
         .from("tracks")
         .select("*", { count: "exact", head: true })
         .eq("session_id", session.id)
         .eq("status", "played");
+
+      if (playedError) throw playedError;
 
       setPendingTracks(pending || []);
       setApprovedTracks(approved || []);
@@ -125,6 +136,7 @@ export default function HostDashboard({ session }: HostDashboardProps) {
       setPlayedCount(playedTotal || 0);
     } catch (error) {
       console.error("Erreur chargement tracks:", error);
+      setLoadError("Impossible de charger la liste des morceaux.");
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +159,12 @@ export default function HostDashboard({ session }: HostDashboardProps) {
       // Nouvelle suggestion
       const track = newRecord as Track;
       if (track.status === "pending") {
-        setPendingTracks((prev) => [...prev, track]);
+        setPendingTracks((prev) => {
+          if (prev.some((existingTrack) => existingTrack.id === track.id)) {
+            return prev;
+          }
+          return [...prev, track];
+        });
       }
     } else if (eventType === "UPDATE") {
       const track = newRecord as Track;
@@ -232,6 +249,12 @@ export default function HostDashboard({ session }: HostDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-sm text-red-700 font-medium">{loadError}</p>
+        </div>
+      )}
+
       {/* LECTEUR YOUTUBE */}
       <YouTubePlayer
         currentTrack={currentTrack}
