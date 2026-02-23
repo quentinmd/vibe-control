@@ -40,21 +40,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer tous les co-hôtes de la session avec leurs infos
+    // Récupérer tous les co-hôtes de la session
     const { data: hosts, error: hostsError } = await supabase
       .from("session_hosts")
-      .select(
-        `
-        id,
-        role,
-        added_at,
-        user_id,
-        profiles:auth.users!session_hosts_user_id_fkey (
-          id,
-          email
-        )
-      `,
-      )
+      .select("id, role, added_at, user_id")
       .eq("session_id", sessionId)
       .order("added_at", { ascending: true });
 
