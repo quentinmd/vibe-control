@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase, Session } from "@/lib/supabase";
@@ -20,7 +20,7 @@ import {
   User,
 } from "lucide-react";
 
-export default function HostPage() {
+function HostPageContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
@@ -481,5 +481,20 @@ export default function HostPage() {
         <HostDashboard session={session} />
       </div>
     </main>
+  );
+}
+
+export default function HostPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+          <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
+          <p className="text-gray-600 mb-2">Chargement de votre espace host...</p>
+        </div>
+      }
+    >
+      <HostPageContent />
+    </Suspense>
   );
 }
